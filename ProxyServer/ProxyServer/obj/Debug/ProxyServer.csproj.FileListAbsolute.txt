@@ -1,0 +1,10 @@
+C:\Users\Zed\source\repos\ProxyServer\ProxyServer\bin\Debug\ProxyServer.exe.config
+C:\Users\Zed\source\repos\ProxyServer\ProxyServer\bin\Debug\ProxyServer.exe
+C:\Users\Zed\source\repos\ProxyServer\ProxyServer\bin\Debug\ProxyServer.pdb
+C:\Users\Zed\source\repos\ProxyServer\ProxyServer\obj\Debug\ProxyServer.Form1.resources
+C:\Users\Zed\source\repos\ProxyServer\ProxyServer\obj\Debug\ProxyServer.Properties.Resources.resources
+C:\Users\Zed\source\repos\ProxyServer\ProxyServer\obj\Debug\ProxyServer.csproj.GenerateResource.cache
+C:\Users\Zed\source\repos\ProxyServer\ProxyServer\obj\Debug\ProxyServer.csproj.CoreCompileInputs.cache
+C:\Users\Zed\source\repos\ProxyServer\ProxyServer\obj\Debug\ProxyServer.exe
+C:\Users\Zed\source\repos\ProxyServer\ProxyServer\obj\Debug\ProxyServer.pdb
+C:\Users\Zed\source\repos\ProxyServer\ProxyServer\obj\Debug\ProxyServer.csprojAssemblyReference.cache
