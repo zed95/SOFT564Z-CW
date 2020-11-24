@@ -1,0 +1,20 @@
+C:\Users\Zed\source\repos\SOFT564DSUI\SOFT564DSUI\bin\Debug\SOFT564DSUI.exe.config
+C:\Users\Zed\source\repos\SOFT564DSUI\SOFT564DSUI\bin\Debug\SOFT564DSUI.exe
+C:\Users\Zed\source\repos\SOFT564DSUI\SOFT564DSUI\bin\Debug\SOFT564DSUI.pdb
+C:\Users\Zed\source\repos\SOFT564DSUI\SOFT564DSUI\obj\Debug\SOFT564DSUI.csprojAssemblyReference.cache
+C:\Users\Zed\source\repos\SOFT564DSUI\SOFT564DSUI\obj\Debug\SOFT564DSUI.Properties.Resources.resources
+C:\Users\Zed\source\repos\SOFT564DSUI\SOFT564DSUI\obj\Debug\SOFT564DSUI.csproj.GenerateResource.cache
+C:\Users\Zed\source\repos\SOFT564DSUI\SOFT564DSUI\obj\Debug\SOFT564DSUI.csproj.CoreCompileInputs.cache
+C:\Users\Zed\source\repos\SOFT564DSUI\SOFT564DSUI\obj\Debug\SOFT564DSUI.exe
+C:\Users\Zed\source\repos\SOFT564DSUI\SOFT564DSUI\obj\Debug\SOFT564DSUI.pdb
+C:\Users\Zed\source\repos\SOFT564DSUI\SOFT564DSUI\obj\Debug\SOFT564DSUI.ClientGUI.resources
+C:\Users\Zed\OneDrive\University Master's Year\SOFT564Z\Coursework\SOFT564DSUI\SOFT564DSUI\bin\Debug\SOFT564DSUI.exe.config
+C:\Users\Zed\OneDrive\University Master's Year\SOFT564Z\Coursework\SOFT564DSUI\SOFT564DSUI\bin\Debug\SOFT564DSUI.exe
+C:\Users\Zed\OneDrive\University Master's Year\SOFT564Z\Coursework\SOFT564DSUI\SOFT564DSUI\bin\Debug\SOFT564DSUI.pdb
+C:\Users\Zed\OneDrive\University Master's Year\SOFT564Z\Coursework\SOFT564DSUI\SOFT564DSUI\obj\Debug\SOFT564DSUI.ClientGUI.resources
+C:\Users\Zed\OneDrive\University Master's Year\SOFT564Z\Coursework\SOFT564DSUI\SOFT564DSUI\obj\Debug\SOFT564DSUI.Properties.Resources.resources
+C:\Users\Zed\OneDrive\University Master's Year\SOFT564Z\Coursework\SOFT564DSUI\SOFT564DSUI\obj\Debug\SOFT564DSUI.csproj.GenerateResource.cache
+C:\Users\Zed\OneDrive\University Master's Year\SOFT564Z\Coursework\SOFT564DSUI\SOFT564DSUI\obj\Debug\SOFT564DSUI.csproj.CoreCompileInputs.cache
+C:\Users\Zed\OneDrive\University Master's Year\SOFT564Z\Coursework\SOFT564DSUI\SOFT564DSUI\obj\Debug\SOFT564DSUI.exe
+C:\Users\Zed\OneDrive\University Master's Year\SOFT564Z\Coursework\SOFT564DSUI\SOFT564DSUI\obj\Debug\SOFT564DSUI.pdb
+C:\Users\Zed\OneDrive\University Master's Year\SOFT564Z\Coursework\SOFT564DSUI\SOFT564DSUI\obj\Debug\SOFT564DSUI.csprojAssemblyReference.cache
