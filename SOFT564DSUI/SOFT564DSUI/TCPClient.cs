@@ -42,11 +42,11 @@ namespace SOFT564DSUI
              }
 }
 
-        static public void send(String message)
+        static public void send(String message, String ID)
         {
             try { 
-                int byteCount = Encoding.ASCII.GetByteCount(message + 1);
-                byte[] sendData = Encoding.ASCII.GetBytes(message);
+                int byteCount = Encoding.ASCII.GetByteCount(ID + message + 1);
+                byte[] sendData = Encoding.ASCII.GetBytes(ID + message);
                 Console.WriteLine("Sending");
                 socket.Send(sendData, sendData.Length, 0);
                 ConnectionLost = false;

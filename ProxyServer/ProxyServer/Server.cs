@@ -17,10 +17,8 @@ namespace ProxyServer
         static private IPAddress ipAddress;
         static private IPEndPoint localEndPoint;
         static private Socket listenerSocket, handler;
-        static private long addr = 0;
         static public String s;
         public static string data = null;
-        static public Thread listenerThread;
         static public bool x = false;
         static public int i = 0;
         
@@ -32,7 +30,7 @@ namespace ProxyServer
             try
             {
                 ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-                ipAddress = ipHostInfo.AddressList[2];
+                ipAddress = ipHostInfo.AddressList[1];
                 localEndPoint = new IPEndPoint(ipAddress, 11000);
 
 
@@ -46,6 +44,7 @@ namespace ProxyServer
             }
             catch (Exception e)
             {
+                Console.WriteLine("Error");
             }
 
         }
@@ -88,7 +87,8 @@ namespace ProxyServer
             clientManager.AddClient(newClientSocket);   //create a client object the handle transcieving of data for the newly connected client.
 
             int count = clientManager.Clients.Count;
-            clientManager.Clients[count].NewClientSend();
+            Console.WriteLine(count);
+            clientManager.Clients[count - 1].NewClientSend();
 
             listenerSocket.BeginAccept(AcceptConnectionCallback, listenerSocket);   //start accepting new incoming connections again.
 
@@ -142,20 +142,27 @@ namespace ProxyServer
                 Console.WriteLine(Server.data.Trim());
                 Array.Clear(buffer, 0, buffer.Length);
                 clientReceive();
-                clientSend();
+                clientSend(Server.data);
             }
         }
 
-        public void clientSend()
+        public void clientSend(String Message)
         {
             String msg = "Data Received";
             byte[] msgByte;
             int msgLen;
 
-            msgLen = Encoding.ASCII.GetByteCount(msg + 1);
-            msgByte = Encoding.ASCII.GetBytes(msg);
-            clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, SendCallback, clientManager.Clients[1].clientSocket);
-            //clientManager.Clients[1].clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, SendCallback, clientManager.Clients[1].clientSocket); //send data to the other client
+            msgLen = Encoding.ASCII.GetByteCount(Message + 1);
+            msgByte = Encoding.ASCII.GetBytes(Message);
+            //clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, SendCallback, clientManager.Clients[1].clientSocket);
+            if (msgByte[0] == '0')
+            {
+                clientManager.Clients[0].clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, SendCallback, clientSocket); //send data to the other client
+            }
+            else
+            {
+                Console.WriteLine("It's not 0");
+            }
 
         }
 
@@ -173,11 +180,11 @@ namespace ProxyServer
 
         private void SendCallback(IAsyncResult asyncResult)
         {
-            int sent = clientSocket.EndSend(asyncResult);
-            if(sent > 0)
-            {
-                Console.WriteLine("Client Sent Bytes");
-            }
+            //int sent = clientSocket.EndSend(asyncResult);
+            //if(sent > 0)
+            //{
+            //    Console.WriteLine("Client Sent Bytes");
+            //}
         }
 
     }

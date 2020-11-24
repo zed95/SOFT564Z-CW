@@ -31,11 +31,13 @@ namespace SOFT564DSUI
         private void callDisplay()
         {
             String Message;
+            int x = BitConverter.ToInt32(TCPClient.buffer, 0);
             while(true) {
                 if (TCPClient.dataAvailable)
                 {
                     Message = Encoding.UTF8.GetString(TCPClient.buffer, 0, TCPClient.buffer.Length);
                     textBox2.Invoke((MethodInvoker)(() => textBox2.Text = Message));
+                    listBox1.Invoke((MethodInvoker)(() => listBox1.Items.Add(x)));
                     TCPClient.dataAvailable = false;
                 }
                 if(!TCPClient.ConnectionLost)
@@ -67,7 +69,8 @@ namespace SOFT564DSUI
 
         private void SendButton_Click(object sender, EventArgs e)
         {
-            TCPClient.send(textBox1.Text);
+            String id = listBox1.GetItemText(listBox1.SelectedItem);
+            TCPClient.send(textBox1.Text, id);
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
