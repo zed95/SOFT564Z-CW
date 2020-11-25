@@ -74,6 +74,7 @@
             this.ipAddressTB.Name = "ipAddressTB";
             this.ipAddressTB.Size = new System.Drawing.Size(212, 20);
             this.ipAddressTB.TabIndex = 4;
+            this.ipAddressTB.Text = "192.168.0.24";
             // 
             // portTB
             // 
@@ -81,6 +82,7 @@
             this.portTB.Name = "portTB";
             this.portTB.Size = new System.Drawing.Size(71, 20);
             this.portTB.TabIndex = 5;
+            this.portTB.Text = "11000";
             this.portTB.TextChanged += new System.EventHandler(this.portTB_TextChanged);
             // 
             // ipAddressLb

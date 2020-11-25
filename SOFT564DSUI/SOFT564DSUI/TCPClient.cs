@@ -29,11 +29,14 @@ namespace SOFT564DSUI
                 //The massive number represents the ip address
                 serverSocket = new IPEndPoint(longServerIP, port);
                 socket = new Socket(serverSocket.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                socket.Connect(serverSocket);
-                if(!pollSocket.IsAlive)
-                {
-                    pollSocket.Start();
-                }
+                //socket.Connect(serverSocket);
+                socket.BeginConnect(serverSocket, ConnectionCallback, null);
+
+                //If socket polling thread is not active thhen start it
+                //if(!pollSocket.IsAlive)
+                //{
+                //    pollSocket.Start();
+                //}
                 ConnectionEstablished = true;
             }   
               catch(Exception e)
@@ -59,13 +62,16 @@ namespace SOFT564DSUI
             }
         }
 
-        static public void receive()
+
+        //Synchronous Receive
+        static public void receive()        
         { 
             socket.Receive(buffer, 0, buffer.Length, 0);
             dataAvailable = true;
         }
 
-        static private void pollSocketAvailable()
+        //Thread to poll if something is available on the synchronous socket
+        static private void pollSocketAvailable()      
         {
             while (true)
             {
@@ -74,6 +80,43 @@ namespace SOFT564DSUI
             }
         }
 
+
+        public static void ConnectionCallback(IAsyncResult asyncResult)
+        {
+            socket.EndConnect(asyncResult);
+
+            //Start listening for incoming bytes.
+            socket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, ReceiveCallback, null);
+        }
+
+
+        public static void ReceiveCallback(IAsyncResult asyncResult)
+        {
+            //Get the number of received bytes
+            int bytesReceived = socket.EndReceive(asyncResult);
+
+            //if bytes available then do something
+            if(bytesReceived > 0)
+            {
+                dataAvailable = true;
+            }
+
+            //start listening for incoming bytes again.
+            socket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, ReceiveCallback, null);
+        }
+
+        static public void asyncSend(String message, String ID)
+        {
+            int byteCount = Encoding.ASCII.GetByteCount(ID + message + 1);
+            byte[] sendData = Encoding.ASCII.GetBytes(ID + message);
+            Console.WriteLine("Sending");
+            socket.BeginSend(sendData, 0, sendData.Length, SocketFlags.None, SendCallback, socket);     //I can actually use beginSend
+        }
+
+        public static void SendCallback(IAsyncResult asyncResult)
+        {
+
+        }
 
         static private long IPtoLong(String addressIP) {
             String number = "";
@@ -101,5 +144,7 @@ namespace SOFT564DSUI
         }
 
     }
+
+
 
 }

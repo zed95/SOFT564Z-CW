@@ -70,7 +70,8 @@ namespace SOFT564DSUI
         private void SendButton_Click(object sender, EventArgs e)
         {
             String id = listBox1.GetItemText(listBox1.SelectedItem);
-            TCPClient.send(textBox1.Text, id);
+            //TCPClient.send(textBox1.Text, id);
+            TCPClient.asyncSend(textBox1.Text, id);
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
