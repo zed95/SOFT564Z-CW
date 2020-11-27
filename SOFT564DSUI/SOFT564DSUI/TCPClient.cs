@@ -98,6 +98,7 @@ namespace SOFT564DSUI
             //if bytes available then do something
             if(bytesReceived > 0)
             {
+                MessageHandler.HandleRequest(buffer);
                 dataAvailable = true;
             }
 

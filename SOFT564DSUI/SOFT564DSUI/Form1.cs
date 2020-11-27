@@ -28,7 +28,7 @@ namespace SOFT564DSUI
             
         }
 
-        private void callDisplay()
+        public void callDisplay()
         {
             String Message;
             int x = BitConverter.ToInt32(TCPClient.buffer, 0);
@@ -36,8 +36,13 @@ namespace SOFT564DSUI
                 if (TCPClient.dataAvailable)
                 {
                     Message = Encoding.UTF8.GetString(TCPClient.buffer, 0, TCPClient.buffer.Length);
+                    if(MessageHandler.newClient == true)
+                    {
+                        listBox1.Invoke((MethodInvoker)(() => listBox1.Items.Add(clientManager.Clients[clientManager.Clients.Count - 1].ipAddress)));
+                        MessageHandler.newClient = false;
+                    }
+                 
                     textBox2.Invoke((MethodInvoker)(() => textBox2.Text = Message));
-                    listBox1.Invoke((MethodInvoker)(() => listBox1.Items.Add(x)));
                     TCPClient.dataAvailable = false;
                 }
                 if(!TCPClient.ConnectionLost)
