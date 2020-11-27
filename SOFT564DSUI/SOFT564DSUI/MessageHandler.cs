@@ -14,13 +14,19 @@ namespace SOFT564DSUI
     static class MessageHandler
     {
         static public bool newClient = false;
+        static public bool removeClient = false;
         static public void HandleRequest(Byte[] Message)
         {
             switch(Message[0])
             {
-                case RequestTypes.UpdateClientList:
+                case RequestTypes.ListAddClient:
                     clientManager.AddClient(Message);
                     newClient = true;
+                    break;
+                case RequestTypes.ListRemoveClient:
+                    clientManager.RemoveClient(Message);
+                    removeClient = true;
+
                     break;
                 default:
 
@@ -32,6 +38,7 @@ namespace SOFT564DSUI
 
     static class RequestTypes
     {
-        public const int UpdateClientList = 1;
+        public const int ListAddClient = 1;
+        public const int ListRemoveClient = 2;
     }
 }

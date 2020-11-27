@@ -20,7 +20,7 @@ namespace SOFT564DSUI
     {
         private static long clientIPAddress;
         private static int clientPort;
-        private static int clientID;
+        public static int clientID;
 
         public static List<ConnectedClients> Clients = new List<ConnectedClients>();
 
@@ -31,16 +31,31 @@ namespace SOFT564DSUI
 
         }
 
-        public static void RemoveClient(int id)
+        public static void RemoveClient(Byte[] data)
         {
-            Clients.RemoveAt(Clients.FindIndex(x => x.clientID == id));
+            typeConverter(data);
+            Clients.RemoveAt(Clients.FindIndex(x => x.clientID == clientID));
+
         }
 
         static private void typeConverter(Byte[] data)
         {
-            clientIPAddress = BitConverter.ToInt64(data, 2);
-            clientPort = BitConverter.ToInt32(data, 10);
-            clientID = BitConverter.ToInt32(data, 14);
+            Console.WriteLine(data[0]);
+            switch(data[0])
+            {
+                case 0:
+                    break;
+                case 1:
+                    clientIPAddress = BitConverter.ToInt64(data, 2);
+                    clientPort = BitConverter.ToInt32(data, 10);
+                    clientID = BitConverter.ToInt32(data, 14);
+                    break;
+                case 2:
+                    clientID = BitConverter.ToInt32(data, 2);
+                    Console.WriteLine(clientID);
+                    break;
+            }
+
         }
     }
 

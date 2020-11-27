@@ -107,73 +107,72 @@ namespace ProxyServer
         //}
 
 
-        public void clientSend(Socket clientSocket, String Message)
+
+
+        public static void sendAllClients(Byte requestType, Client client)
         {
-            String msg = "Data Received";
-            byte[] msgByte;
-            int msgLen;
+            Byte[] msgByte;
 
-            msgLen = Encoding.ASCII.GetByteCount(Message + 1);
-            msgByte = Encoding.ASCII.GetBytes(Message);
-            //clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, SendCallback, clientManager.Clients[1].clientSocket);
-            if (msgByte[0] == '0')
-            {
-                clientManager.Clients[0].clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, SendCallback, clientSocket); //send data to the other client
-            }
-            else
-            {
-                Console.WriteLine("It's not 0");
-            }
+            msgByte = TransmissionConverter(requestType, client);
 
+            //use foreach method
+            foreach (Client clients in clientManager.Clients)
+            {
+                try
+                {
+                    clients.clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, client.SendCallback, clients.clientSocket); //send data to the other client
+                }
+                catch(Exception e)
+                {
+
+                }
+            }
         }
 
-        public static void sendAllClients(Client newClient)
+        private static Byte[] TransmissionConverter(Byte requestType, Client client)
         {
+            Byte[] returnByte = null;
             Byte[] ipAddress;
             Byte[] port;
             Byte[] id;
-            Byte[] requestType;
+            Byte[] ByterequestType;
             String StrIPAddr;
             IPEndPoint endPoint;
-            Byte[] msgByte;
-            int msgLen;
 
-            endPoint = (IPEndPoint)newClient.clientSocket.RemoteEndPoint;
-            IPAddress addr = endPoint.Address;
-            StrIPAddr = addr.ToString();
-            Console.WriteLine(StrIPAddr);
-            Console.WriteLine(endPoint.Port);
-            Console.WriteLine(newClient.clientID);
-            Console.WriteLine(IPtoLong(StrIPAddr));
-            ipAddress = BitConverter.GetBytes(IPtoLong(StrIPAddr));
-            port = BitConverter.GetBytes(endPoint.Port);
-            id = BitConverter.GetBytes(newClient.clientID);
-
-            requestType = BitConverter.GetBytes((Byte)1);
-
-            msgByte = new byte[ipAddress.Length + port.Length + id.Length + requestType.Length];
-            Buffer.BlockCopy(requestType, 0, msgByte, 0, requestType.Length);
-            Buffer.BlockCopy(ipAddress, 0, msgByte, requestType.Length, ipAddress.Length);
-            Buffer.BlockCopy(port, 0, msgByte, (ipAddress.Length + requestType.Length), port.Length);
-            Buffer.BlockCopy(id, 0, msgByte, (ipAddress.Length + requestType.Length + port.Length), id.Length);
-
-            //use foreach method
-            foreach (Client client in clientManager.Clients)
+            switch (requestType)
             {
-                client.clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, SendCallback, client.clientSocket); //send data to the other client
+                case 0:
 
+                    break;
+                case 1:
+                    endPoint = (IPEndPoint)client.clientSocket.RemoteEndPoint;
+                    IPAddress addr = endPoint.Address;
+                    StrIPAddr = addr.ToString();
+                    ipAddress = BitConverter.GetBytes(IPtoLong(StrIPAddr));
+                    port = BitConverter.GetBytes(endPoint.Port);
+                    id = BitConverter.GetBytes(client.clientID);
 
+                    ByterequestType = BitConverter.GetBytes(requestType);
+                    returnByte = new byte[ipAddress.Length + port.Length + id.Length + ByterequestType.Length];
+                    Buffer.BlockCopy(ByterequestType, 0, returnByte, 0, ByterequestType.Length);
+                    Buffer.BlockCopy(ipAddress, 0, returnByte, ByterequestType.Length, ipAddress.Length);
+                    Buffer.BlockCopy(port, 0, returnByte, (ipAddress.Length + ByterequestType.Length), port.Length);
+                    Buffer.BlockCopy(id, 0, returnByte, (ipAddress.Length + ByterequestType.Length + port.Length), id.Length);
+                    break;
+                case 2:
+                    id = BitConverter.GetBytes(client.clientID);
+                    ByterequestType = BitConverter.GetBytes(requestType);
+                    returnByte = new byte[id.Length + ByterequestType.Length];
+                    Buffer.BlockCopy(ByterequestType, 0, returnByte, 0, ByterequestType.Length);
+                    Buffer.BlockCopy(id, 0, returnByte, ByterequestType.Length, id.Length);
+                    break;
+                default:
+                    break;
             }
+
+            return returnByte;
         }
 
-        private static void SendCallback(IAsyncResult asyncResult)
-        {
-            //int sent = clientSocket.EndSend(asyncResult);
-            //if(sent > 0)
-            //{
-            //    Console.WriteLine("Client Sent Bytes");
-            //}
-        }
 
         static private long IPtoLong(String addressIP)
         {
@@ -210,15 +209,31 @@ namespace ProxyServer
 
         public static void AddClient(Socket socket)
         {
-            Clients.Add(new Client(socket, Clients.Count));
-            Server.sendAllClients(Clients[Clients.Count - 1]); //Send an update to all clients that new connection has been Made;
+            Clients.Add(new Client(socket, AssignID()));
+            Server.sendAllClients((Byte)1, Clients[Clients.Count - 1]); //Send an update to all clients that new connection has been Made;
 
         }
 
         public static void RemoveClient(int id)
         {
+            Server.sendAllClients((Byte)2, Clients.Find(DisconnectedClient => DisconnectedClient.clientID == id));
             Clients.RemoveAt(Clients.FindIndex(x => x.clientID == id));
         }
+
+        private static int AssignID()    //Assign a unique ID to each client;
+        {
+            int newID = 0;
+
+            foreach (Client client in Clients)
+            {
+                newID += client.clientID;
+            }
+
+            newID += Clients.Count;
+
+            return newID;
+        }
+
     }
 
     class Client
@@ -244,15 +259,51 @@ namespace ProxyServer
 
         private void ReceiveCallback(IAsyncResult asyncResult)
         {
-            int received = clientSocket.EndReceive(asyncResult);
-            if (received > 0)    //if there is 
+            try
             {
-                Server.data = Encoding.Default.GetString(buffer);
-                Server.x = true;
-                Console.WriteLine(Server.data.Trim());
-                Array.Clear(buffer, 0, buffer.Length);
-                clientReceive();
+                int received = clientSocket.EndReceive(asyncResult);
+                if (received > 0)    //if there is 
+                {
+                    Server.data = Encoding.Default.GetString(buffer);
+                    Server.x = true;
+                    Console.WriteLine(Server.data.Trim());
+                    Array.Clear(buffer, 0, buffer.Length);
+                    clientReceive();
+                }
             }
+            catch(Exception e)  //In the case of a disconnection, remove the disconnected client and update controller clients
+            {
+                clientManager.RemoveClient(clientID);
+            }
+        }
+
+        public void clientSend(Socket clientSocket, String Message)
+        {
+            String msg = "Data Received";
+            byte[] msgByte;
+            int msgLen;
+
+            msgLen = Encoding.ASCII.GetByteCount(Message + 1);
+            msgByte = Encoding.ASCII.GetBytes(Message);
+            //clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, SendCallback, clientManager.Clients[1].clientSocket);
+            if (msgByte[0] == '0')
+            {
+                clientManager.Clients[0].clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, SendCallback, clientSocket); //send data to the other client
+            }
+            else
+            {
+                Console.WriteLine("It's not 0");
+            }
+
+        }
+
+        public void SendCallback(IAsyncResult asyncResult)
+        {
+            //int sent = clientSocket.EndSend(asyncResult);
+            //if(sent > 0)
+            //{
+            //    Console.WriteLine("Client Sent Bytes");
+            //}
         }
 
     }

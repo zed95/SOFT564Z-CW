@@ -38,8 +38,20 @@ namespace SOFT564DSUI
                     Message = Encoding.UTF8.GetString(TCPClient.buffer, 0, TCPClient.buffer.Length);
                     if(MessageHandler.newClient == true)
                     {
-                        listBox1.Invoke((MethodInvoker)(() => listBox1.Items.Add(clientManager.Clients[clientManager.Clients.Count - 1].ipAddress)));
+                        listBox1.Invoke((MethodInvoker)(() => listBox1.Items.Add(clientManager.Clients[clientManager.Clients.Count - 1].clientID)));
                         MessageHandler.newClient = false;
+                    }
+                    if(MessageHandler.removeClient == true)
+                    {
+                        for (int xx = 0; xx <= listBox1.Items.Count; xx++)
+                        {
+                            if (Convert.ToInt32(listBox1.Items[xx]) == clientManager.clientID)
+                            {
+                                listBox1.Invoke((MethodInvoker)(() => listBox1.Items.RemoveAt(xx)));
+                                break;
+                            }
+                        }
+                        MessageHandler.removeClient = false;
                     }
                  
                     textBox2.Invoke((MethodInvoker)(() => textBox2.Text = Message));
