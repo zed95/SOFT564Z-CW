@@ -18,45 +18,24 @@ namespace SOFT564DSUI
 
     static class clientManager
     {
-        private static long clientIPAddress;
-        private static int clientPort;
+        public static long clientIPAddress;
+        public static int clientPort;
         public static int clientID;
 
         public static List<ConnectedClients> Clients = new List<ConnectedClients>();
 
-        public static void AddClient(Byte[] data)
+        public static void AddClient()
         {
-            typeConverter(data);
             Clients.Add(new ConnectedClients(clientIPAddress, clientPort, clientID));
-
         }
 
-        public static void RemoveClient(Byte[] data)
+        public static void RemoveClient()
         {
-            typeConverter(data);
             Clients.RemoveAt(Clients.FindIndex(x => x.clientID == clientID));
-
         }
 
-        static private void typeConverter(Byte[] data)
-        {
-            Console.WriteLine(data[0]);
-            switch(data[0])
-            {
-                case 0:
-                    break;
-                case 1:
-                    clientIPAddress = BitConverter.ToInt64(data, 2);
-                    clientPort = BitConverter.ToInt32(data, 10);
-                    clientID = BitConverter.ToInt32(data, 14);
-                    break;
-                case 2:
-                    clientID = BitConverter.ToInt32(data, 2);
-                    Console.WriteLine(clientID);
-                    break;
-            }
 
-        }
+        
     }
 
     class ConnectedClients

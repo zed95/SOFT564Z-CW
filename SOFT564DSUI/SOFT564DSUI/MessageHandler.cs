@@ -20,19 +20,26 @@ namespace SOFT564DSUI
             switch(Message[0])
             {
                 case RequestTypes.ListAddClient:
-                    clientManager.AddClient(Message);
+                    clientManager.clientIPAddress = BitConverter.ToInt64(Message, 2);
+                    clientManager.clientPort = BitConverter.ToInt32(Message, 10);
+                    clientManager.clientID = BitConverter.ToInt32(Message, 14);
+
+                    clientManager.AddClient();
                     newClient = true;
-                    break;
+                break;
                 case RequestTypes.ListRemoveClient:
-                    clientManager.RemoveClient(Message);
+                    clientManager.clientID = BitConverter.ToInt32(Message, 2);
+
+                    clientManager.RemoveClient();
                     removeClient = true;
 
-                    break;
+                break;
                 default:
 
                     break;
             }
         }
+
 
     }
 

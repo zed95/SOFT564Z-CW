@@ -96,6 +96,7 @@ namespace SOFT564DSUI
             int bytesReceived = socket.EndReceive(asyncResult);
 
             //if bytes available then do something
+            Console.WriteLine(bytesReceived);
             if(bytesReceived > 0)
             {
                 MessageHandler.HandleRequest(buffer);
