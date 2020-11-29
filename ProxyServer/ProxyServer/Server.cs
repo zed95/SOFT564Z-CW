@@ -113,20 +113,29 @@ namespace ProxyServer
         {
             Byte[] msgByte;
 
+            //I can combine to two foreach together and then use some conditional statement. This will reduce the code
+            //I need to add a mechanism that will take a receive buffer and sort out all of the data in it into requests so that my client can sort them out one by one.
+            //The above below code works but my client receives the requests as a batch and only processes one request because i didnt implement anything that could handle bulk requests.
+            foreach (Client clients in clientManager.Clients)
+            {
+                msgByte = TransmissionConverter(requestType, clients);
+                client.clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, client.SendCallback, client.clientSocket);
+
+            }
             msgByte = TransmissionConverter(requestType, client);
 
             //use foreach method
-            foreach (Client clients in clientManager.Clients)
-            {
-                try
-                {
-                    clients.clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, client.SendCallback, clients.clientSocket); //send data to the other client
-                }
-                catch(Exception e)
-                {
+            //foreach (Client clients in clientManager.Clients)
+            //{
+            //    try
+            //    {
+            //        clients.clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other client
+            //    }
+            //    catch(Exception e)
+            //    {
 
-                }
-            }
+            //    }
+            //}
         }
 
         private static Byte[] TransmissionConverter(Byte requestType, Client client)
@@ -299,7 +308,7 @@ namespace ProxyServer
 
         public void SendCallback(IAsyncResult asyncResult)
         {
-            //int sent = clientSocket.EndSend(asyncResult);
+            int sent = clientSocket.EndSend(asyncResult);
             //if(sent > 0)
             //{
             //    Console.WriteLine("Client Sent Bytes");
