@@ -118,24 +118,34 @@ namespace ProxyServer
             //The above below code works but my client receives the requests as a batch and only processes one request because i didnt implement anything that could handle bulk requests.
             foreach (Client clients in clientManager.Clients)
             {
-                msgByte = TransmissionConverter(requestType, clients);
-                client.clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, client.SendCallback, client.clientSocket);
+                try
+                {
+                    msgByte = TransmissionConverter(requestType, clients);
+                    client.clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, client.SendCallback, client.clientSocket);
+                }
+                catch(Exception e)
+                {
+
+                }
 
             }
             msgByte = TransmissionConverter(requestType, client);
 
             //use foreach method
-            //foreach (Client clients in clientManager.Clients)
-            //{
-            //    try
-            //    {
-            //        clients.clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other client
-            //    }
-            //    catch(Exception e)
-            //    {
+            foreach (Client clients in clientManager.Clients)
+            {
+                try
+                {
+                    if (client.clientID != clients.clientID)
+                    {
+                        clients.clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other client
+                    }
+                    }
+                catch (Exception e)
+                {
 
-            //    }
-            //}
+                }
+            }
         }
 
         private static Byte[] TransmissionConverter(Byte requestType, Client client)

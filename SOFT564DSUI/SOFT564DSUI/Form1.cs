@@ -31,6 +31,7 @@ namespace SOFT564DSUI
         public void callDisplay()
         {
             String Message;
+            bool remove = true;
             int x = BitConverter.ToInt32(TCPClient.buffer, 0);
             while(true) {
                 if (TCPClient.dataAvailable)
@@ -38,17 +39,50 @@ namespace SOFT564DSUI
                     Message = Encoding.UTF8.GetString(TCPClient.buffer, 0, TCPClient.buffer.Length);
                     if(MessageHandler.newClient == true)
                     {
-                        listBox1.Invoke((MethodInvoker)(() => listBox1.Items.Add(clientManager.Clients[clientManager.Clients.Count - 1].clientID)));
+                        foreach(ConnectedClients client in clientManager.Clients)
+                        {
+
+                            if (listBox1.FindStringExact(client.clientID.ToString()) == -1)
+                            {
+                                listBox1.Invoke((MethodInvoker)(() => listBox1.Items.Add(client.clientID)));
+                                Console.WriteLine("Im here 1");
+                            }
+                            Console.WriteLine("Im here 2");
+                        }
+                        
                         MessageHandler.newClient = false;
                     }
                     if(MessageHandler.removeClient == true)
                     {
+                        //this method does not crash but does not protect against multiple multiple removal requests
+                        //for (int xx = 0; xx <= listBox1.Items.Count; xx++)
+                        //{
+                        //    if (Convert.ToInt32(listBox1.Items[xx]) == clientManager.clientID)  //If there is more than one to remove this won't work because the program will overwrite the first client to remove. Need to adjust this.
+                        //    {
+                        //        listBox1.Invoke((MethodInvoker)(() => listBox1.Items.RemoveAt(xx)));
+                        //        break;
+                        //    }
+                        //}
+
                         for (int xx = 0; xx <= listBox1.Items.Count; xx++)
                         {
-                            if (Convert.ToInt32(listBox1.Items[xx]) == clientManager.clientID)
+                            foreach (ConnectedClients client in clientManager.Clients)
+                            {
+
+                                //This method crashes here but conceptually protects against multiple removal requests. Need to find out why it crashes and make it work.
+                                if (Convert.ToInt32(listBox1.Items[xx]) == client.clientID)  //If there is more than one to remove this won't work because the program will overwrite the first client to remove. Need to adjust this.
+                                {
+                                    remove = false;
+                                    break;
+                                }
+                                else
+                                {
+                                    remove = true;
+                                }
+                            }
+                            if (remove == true)
                             {
                                 listBox1.Invoke((MethodInvoker)(() => listBox1.Items.RemoveAt(xx)));
-                                break;
                             }
                         }
                         MessageHandler.removeClient = false;

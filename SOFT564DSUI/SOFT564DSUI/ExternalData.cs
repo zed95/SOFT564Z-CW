@@ -27,6 +27,11 @@ namespace SOFT564DSUI
         public static void AddClient()
         {
             Clients.Add(new ConnectedClients(clientIPAddress, clientPort, clientID));
+            foreach(ConnectedClients client in Clients)
+            {
+                Console.WriteLine("Clients Connected" + client.clientID);
+                Console.WriteLine("Clients port" + client.clientPort);
+            }
         }
 
         public static void RemoveClient()

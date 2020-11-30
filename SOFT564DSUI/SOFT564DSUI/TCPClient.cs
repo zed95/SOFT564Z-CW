@@ -99,7 +99,9 @@ namespace SOFT564DSUI
             Console.WriteLine(bytesReceived);
             if(bytesReceived > 0)
             {
-                MessageHandler.HandleRequest(buffer);
+                Byte[] Message = new byte[bytesReceived];
+                Buffer.BlockCopy(buffer, 0, Message, 0, bytesReceived);
+                MessageHandler.HandleRequest(Message);
                 dataAvailable = true;
             }
 
