@@ -50,37 +50,6 @@ namespace ProxyServer
 
         }
 
-        static public void listen()
-        {
-            byte[] bytes = new Byte[1024];
-            int byteCount;
-            byte[] sendData;
-
-            while (true)
-            {
-                //handler = socketListener.Accept();
-                data = null;
-
-                // An incoming connection needs to be processed.  
-                while (true)
-                {
-                    int bytesRec = handler.Receive(bytes);
-                    data += Encoding.ASCII.GetString(bytes, 0, bytesRec);
-                    data = handler.RemoteEndPoint.ToString();
-                    byteCount = Encoding.ASCII.GetByteCount(data + 1);
-                    sendData = Encoding.ASCII.GetBytes(data);
-                    handler.Send(sendData, sendData.Length, 0);
-
-                    if (data.IndexOf("<EOF>") > -1)
-                    {
-                        break;
-                    }
-
-                }
-            }
-
-        }
-
         public static void AcceptConnectionCallback(IAsyncResult asyncResult)
         {
             Socket newClientSocket = listenerSocket.EndAccept(asyncResult);   //accept communication and create a new socket to handle communication with the new client
@@ -96,29 +65,13 @@ namespace ProxyServer
         }
 
 
-        //public void NewClientSend()
-        //{
-        //    byte[] msgByte;
-        //    int ID;
-
-        //    ID = clientManager.Clients[0].clientID;
-        //    msgByte = BitConverter.GetBytes(ID);
-        //    clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, SendCallback, clientSocket);
-
-        //}
-
-
-
-
+        //Sends data to all connected clients.
         public static void sendAllClients(Byte requestType, Client client)
         {
-            Byte[] msgByte;
-            Byte[] msgByte1;
+            Byte[] ClientInfo;
+            Byte[] NewClientUpdateInfo;
 
-            //I can combine to two foreach together and then use some conditional statement. This will reduce the code
-            //I need to add a mechanism that will take a receive buffer and sort out all of the data in it into requests so that my client can sort them out one by one.
-            //The above below code works but my client receives the requests as a batch and only processes one request because i didnt implement anything that could handle bulk requests.
-            msgByte = TransmissionConverter(requestType, client);
+            ClientInfo = TransmissionConverter(requestType, client);  //Conver client data to send to all other clients.
             foreach (Client clients in clientManager.Clients)
             {
                 try
@@ -127,38 +80,21 @@ namespace ProxyServer
                     {
                         if (requestType == 1)
                         {
-                            msgByte1 = TransmissionConverter(requestType, clients);
-                            client.clientSocket.BeginSend(msgByte1, 0, msgByte1.Length, SocketFlags.None, client.SendCallback, client.clientSocket);
+                            //send data of all clients (apart from the data of the actual client itself) to the newly connected client.
+                            NewClientUpdateInfo = TransmissionConverter(requestType, clients);
+                            client.clientSocket.BeginSend(NewClientUpdateInfo, 0, NewClientUpdateInfo.Length, SocketFlags.None, client.SendCallback, client.clientSocket);
                         }
-                        clients.clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other client
+                        clients.clientSocket.BeginSend(ClientInfo, 0, ClientInfo.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other clients
                     }
-
                 }
                 catch(Exception e)
                 {
-                    Console.WriteLine("sendAllClients");
+                    Console.WriteLine("Exception in sendAllClients");
                 }
-
             }
-            //msgByte = TransmissionConverter(requestType, client);
-
-            ////use foreach method
-            //foreach (Client clients in clientManager.Clients)
-            //{
-            //    try
-            //    {
-            //        if (client.clientID != clients.clientID)
-            //        {
-            //            clients.clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other client
-            //        }
-            //        }
-            //    catch (Exception e)
-            //    {
-
-            //    }
-            //}
         }
 
+        //Converts client data and request types into a byte array to be sent over the network
         private static Byte[] TransmissionConverter(Byte requestType, Client client)
         {
             Byte[] returnByte = null;
@@ -203,7 +139,7 @@ namespace ProxyServer
             return returnByte;
         }
 
-
+        //Converts IP address from string format to long;
         static private long IPtoLong(String addressIP)
         {
             String number = "";
@@ -239,23 +175,25 @@ namespace ProxyServer
 
         public static void AddClient(Socket socket)
         {
-            Clients.Add(new Client(socket, AssignID()));
-            Server.sendAllClients((Byte)1, Clients[Clients.Count - 1]); //Send an update to all clients that new connection has been Made;
+            Clients.Add(new Client(socket, AssignID()));                            //Add newly connected client to the list of clients
+            Server.sendAllClients((Byte)1, Clients[Clients.Count - 1]);             //Send data about the newly connected client to all other connected clients.
 
         }
 
         public static void RemoveClient(int id)
         {
             Client removedClient;
-            if (Clients.Exists(ClientToRemove => ClientToRemove.clientID == id))    //Prevent Multiple exceptions from calling for removal of the client by checking if client of such id exists
+            if (Clients.Exists(ClientToRemove => ClientToRemove.clientID == id))                        //Prevent Multiple exceptions from calling for removal of the client by checking if client of such id exists
             {
-                removedClient = Clients.Find(DisconnectedClient => DisconnectedClient.clientID == id);
-                Clients.RemoveAt(Clients.FindIndex(x => x.clientID == id));
-                Server.sendAllClients((Byte)2, removedClient);
+                removedClient = Clients.Find(DisconnectedClient => DisconnectedClient.clientID == id);  //extract info of the client to remove in order to tell other clients to remove the client from their list.
+                Clients.RemoveAt(Clients.FindIndex(x => x.clientID == id));                             //Remove the client from the list
+                Server.sendAllClients((Byte)2, removedClient);                                          //Update all the clients connected that the client has been removoed.
+                //change the request type numbers into meaningful constants.
             }
         }
 
-        private static int AssignID()    //Assign a unique ID to each client;
+        //Generates a unique client id for newly connected clients.
+        private static int AssignID()    
         {
             int newID = 0;
 
@@ -284,21 +222,25 @@ namespace ProxyServer
             buffer = new byte[1024];
 
             clientReceive();
-
         }
 
+        //calls the BeginReceive function to start receiving incoming data to the socket.
         public void clientReceive()
         {
             clientSocket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, ReceiveCallback, null);
         }
 
+        //function called in response to data being received.
         private void ReceiveCallback(IAsyncResult asyncResult)
         {
             try
             {
-                int received = clientSocket.EndReceive(asyncResult);
-                if (received > 0)    //if there is 
+                int received = clientSocket.EndReceive(asyncResult);    //how many bytes we got
+                if (received > 0)    //do something if we received any bytes
                 {
+                    //Adapt the receive function to be abel to handle requests. Copy the request handler and add some access control to it as multiple clients can access the server
+                    //therefore there will be multiple requests coming off of different threads meaning that resource sharing will have to be implemented in order to stop
+                    //race conditions from happenning and data of one thread being corrupted or overwritten by another.
                     Server.data = Encoding.Default.GetString(buffer);
                     Server.x = true;
                     Console.WriteLine(Server.data.Trim());
@@ -315,10 +257,10 @@ namespace ProxyServer
 
         public void clientSend(Socket clientSocket, String Message)
         {
-            String msg = "Data Received";
             byte[] msgByte;
             int msgLen;
 
+            //Adapt this function to send data to a speciffied client.
             msgLen = Encoding.ASCII.GetByteCount(Message + 1);
             msgByte = Encoding.ASCII.GetBytes(Message);
             //clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, SendCallback, clientManager.Clients[1].clientSocket);
@@ -333,6 +275,7 @@ namespace ProxyServer
 
         }
 
+        //callback function when data was sent.
         public void SendCallback(IAsyncResult asyncResult)
         {
             int sent = clientSocket.EndSend(asyncResult);

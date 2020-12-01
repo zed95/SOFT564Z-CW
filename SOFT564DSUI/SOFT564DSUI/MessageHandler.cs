@@ -17,22 +17,21 @@ namespace SOFT564DSUI
         static public bool removeClient = false;
         static public void HandleRequest(Byte[] Message)
         {
-            bool allRequestsServiced = false;
             byte[] Request;
             int bytesProcessed = 0;
 
-            int count = Buffer.ByteLength(Message);
-            for(int x = 0; x < Message.Length; x++)
+            int count = Buffer.ByteLength(Message);         //Count the number of bytes in the messages buffer.
+            for(int x = 0; x < Message.Length; x++)         
             {
                 Console.WriteLine(Message[x]);
             }
             Console.WriteLine("Number of bytes in buffer: " + count);
 
-            while (bytesProcessed != count)
+            while (bytesProcessed != count)     //Loop until all bytes passed to the handler have been processed.
             {
 
                 Request = getRequest(Message);
-                switch (Request[0])
+                switch (Request[0])     //After extracting the request from the messages buffer, shift the contents of the buffer that many bytes so that next request can be extracted. 
                 {
                     case RequestTypes.ListAddClient:
                         Buffer.BlockCopy(Message, 18, Message, 0, Message.Length - 18);
@@ -48,7 +47,7 @@ namespace SOFT564DSUI
                 }
                 //Add check whether the request has all the required data.
 
-
+                //Turn the data back into appropriate format based on type of request.
                 switch (Request[0])
                 {
                     case RequestTypes.ListAddClient:
@@ -80,10 +79,12 @@ namespace SOFT564DSUI
             }
         }
 
+        //extracts a single request from the Messages buffer based on the type of request it is.
         static private Byte[] getRequest(Byte[] Message)
         {
             Byte[] RequestData = null;
 
+            //The type of request is always stored in the first byte.
             switch (Message[0])
             {
                 case RequestTypes.ListAddClient:
@@ -101,6 +102,7 @@ namespace SOFT564DSUI
             return RequestData;
         }
 
+        //Copies a specified number of bytes from one byte array to another.
         static private Byte[] ArrCopy(Byte[] Arr, int BytesToCopy)
         {
             Byte[] data = new byte[BytesToCopy];
@@ -112,6 +114,7 @@ namespace SOFT564DSUI
 
     }
 
+    //A class with a list of all possible request types.
     static class RequestTypes
     {
         public const int ListAddClient = 1;

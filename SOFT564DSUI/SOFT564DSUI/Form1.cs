@@ -37,50 +37,34 @@ namespace SOFT564DSUI
                 if (TCPClient.dataAvailable)
                 {
                     Message = Encoding.UTF8.GetString(TCPClient.buffer, 0, TCPClient.buffer.Length);
-                    if(MessageHandler.newClient == true)
+                    if (listBox1.Items.Count < clientManager.Clients.Count)
                     {
-                        foreach(ConnectedClients client in clientManager.Clients)
+                        foreach (ConnectedClients client in clientManager.Clients)
                         {
-
-                            if (listBox1.FindStringExact(client.clientID.ToString()) == -1)
+                            if (listBox1.FindStringExact(client.clientID.ToString()) == -1) //if there any client in the connectedclient list that isn't on the list then add it.
                             {
-                                listBox1.Invoke((MethodInvoker)(() => listBox1.Items.Add(client.clientID)));
-                                Console.WriteLine("Im here 1");
+                                listBox1.Invoke((MethodInvoker)(() => listBox1.Items.Add(client.clientID)));    //Add client to the list of available clients.
                             }
-                            Console.WriteLine("Im here 2");
                         }
-                        
-                        MessageHandler.newClient = false;
-                    }
-                    if(MessageHandler.removeClient == true)
+                    }       
+
+
+                    if (listBox1.Items.Count > clientManager.Clients.Count)
                     {
-                        //this method does not crash but does not protect against multiple multiple removal requests
-                        //for (int xx = 0; xx <= listBox1.Items.Count; xx++)
-                        //{
-                        //    if (Convert.ToInt32(listBox1.Items[xx]) == clientManager.clientID)  //If there is more than one to remove this won't work because the program will overwrite the first client to remove. Need to adjust this.
-                        //    {
-                        //        listBox1.Invoke((MethodInvoker)(() => listBox1.Items.RemoveAt(xx)));
-                        //        break;
-                        //    }
-                        //}
-
-                        
-
                         for (int xx = 0; xx < listBox1.Items.Count; xx++)
                         {
                             Console.WriteLine("Listbox Counter: " + listBox1.Items.Count);
                             Console.WriteLine("Loop Increment : " + xx);
-                            //This method crashes here but conceptually protects against multiple removal requests. Need to find out why it crashes and make it work.
-                            if (!clientManager.Clients.Exists(connectedClient => connectedClient.clientID == Convert.ToInt32(listBox1.Items[xx])))  //If there is more than one to remove this won't work because the program will overwrite the first client to remove. Need to adjust this.
+                            if (!clientManager.Clients.Exists(connectedClient => connectedClient.clientID == Convert.ToInt32(listBox1.Items[xx])))  //If client id on the list does not belong to any clients in the connected client list remove it from the list.
                             {
-                                listBox1.Invoke((MethodInvoker)(() => listBox1.Items.RemoveAt(xx)));
-                                xx--;
+                                listBox1.Invoke((MethodInvoker)(() => listBox1.Items.RemoveAt(xx)));    //Remove the client from the available client list.
+                                xx--;   //push the counter back once so that all items on the list are compared against the connected clients list. The list ios rearranged after removal of an item.
                                 remove = false;
                             }
 
                         }
-                        MessageHandler.removeClient = false;
-                    }
+                    }   
+
                  
                     textBox2.Invoke((MethodInvoker)(() => textBox2.Text = Message));
                     TCPClient.dataAvailable = false;

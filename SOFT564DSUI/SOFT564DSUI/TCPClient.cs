@@ -18,7 +18,6 @@ namespace SOFT564DSUI
         public static bool ConnectionLost = false;
         static private Socket socket;
         static private IPEndPoint serverSocket;
-        static private Thread pollSocket = new Thread(pollSocketAvailable);
         static public byte[] buffer = new byte[1460];
 
         static public void initClient(String serverIP, Int32 port)
@@ -28,15 +27,9 @@ namespace SOFT564DSUI
                 long longServerIP = IPtoLong(serverIP);
                 //The massive number represents the ip address
                 serverSocket = new IPEndPoint(longServerIP, port);
-                socket = new Socket(serverSocket.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                //socket.Connect(serverSocket);
-                socket.BeginConnect(serverSocket, ConnectionCallback, null);
+                socket = new Socket(serverSocket.AddressFamily, SocketType.Stream, ProtocolType.Tcp); //setup a new socket to connect to the server.
+                socket.BeginConnect(serverSocket, ConnectionCallback, null);    //Start attempting to connect to the remote host.
 
-                //If socket polling thread is not active thhen start it
-                //if(!pollSocket.IsAlive)
-                //{
-                //    pollSocket.Start();
-                //}
                 ConnectionEstablished = true;
             }   
               catch(Exception e)
@@ -45,48 +38,12 @@ namespace SOFT564DSUI
              }
 }
 
-        static public void send(String message, String ID)
-        {
-            try { 
-                int byteCount = Encoding.ASCII.GetByteCount(ID + message + 1);
-                byte[] sendData = Encoding.ASCII.GetBytes(ID + message);
-                Console.WriteLine("Sending");
-                socket.Send(sendData, sendData.Length, 0);
-                ConnectionLost = false;
-            }
-            catch(Exception e)
-            {
-                Console.WriteLine("Failed to send");
-                ConnectionLost = true;
-
-            }
-        }
-
-
-        //Synchronous Receive
-        static public void receive()        
-        { 
-            socket.Receive(buffer, 0, buffer.Length, 0);
-            dataAvailable = true;
-        }
-
-        //Thread to poll if something is available on the synchronous socket
-        static private void pollSocketAvailable()      
-        {
-            while (true)
-            {
-                while (socket.Available == 0) { }
-                receive();
-            }
-        }
-
 
         public static void ConnectionCallback(IAsyncResult asyncResult)
         {
-            socket.EndConnect(asyncResult);
-
+            socket.EndConnect(asyncResult);     //stop requesting connection when connected;
             //Start listening for incoming bytes.
-            socket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, ReceiveCallback, null);
+            socket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, ReceiveCallback, null); //start listening for incoming data from the server.
         }
 
 
@@ -96,27 +53,27 @@ namespace SOFT564DSUI
             int bytesReceived = socket.EndReceive(asyncResult);
 
             //if bytes available then do something
-            Console.WriteLine(bytesReceived);
             if(bytesReceived > 0)
             {
-                Byte[] Message = new byte[bytesReceived];
-                Buffer.BlockCopy(buffer, 0, Message, 0, bytesReceived);
-                MessageHandler.HandleRequest(Message);
+                Byte[] Message = new byte[bytesReceived];                   //Create a message buffer of the same size as bytes received.
+                Buffer.BlockCopy(buffer, 0, Message, 0, bytesReceived);     //Copy the contents of the buffer to the other buffer. the buffer used to receive data from the TCP stream is overwritten on every callback.
+                MessageHandler.HandleRequest(Message);                      //Process the request
                 dataAvailable = true;
             }
 
-            //start listening for incoming bytes again.
+            //start waiting for bytes again. 
             socket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, ReceiveCallback, null);
         }
 
         static public void asyncSend(String message, String ID)
         {
-            int byteCount = Encoding.ASCII.GetByteCount(ID + message + 1);
-            byte[] sendData = Encoding.ASCII.GetBytes(ID + message);
+            int byteCount = Encoding.ASCII.GetByteCount(ID + message + 1);      //get the number of bytes in the message that I want to send
+            byte[] sendData = Encoding.ASCII.GetBytes(ID + message);            //convert data in an array of bytes.
             Console.WriteLine("Sending");
-            socket.BeginSend(sendData, 0, sendData.Length, SocketFlags.None, SendCallback, socket);     //I can actually use beginSend
+            socket.BeginSend(sendData, 0, sendData.Length, SocketFlags.None, SendCallback, socket);     //start the transmission process
         }
 
+        //asynchronous sending callback witht the result of the transmission attempt.
         public static void SendCallback(IAsyncResult asyncResult)
         {
 
