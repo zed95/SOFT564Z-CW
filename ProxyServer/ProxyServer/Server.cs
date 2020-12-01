@@ -29,6 +29,7 @@ namespace ProxyServer
 
             try
             {
+                Console.WriteLine("");
                 ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
                 ipAddress = ipHostInfo.AddressList[1];
                 localEndPoint = new IPEndPoint(ipAddress, 11000);
@@ -112,40 +113,50 @@ namespace ProxyServer
         public static void sendAllClients(Byte requestType, Client client)
         {
             Byte[] msgByte;
+            Byte[] msgByte1;
 
             //I can combine to two foreach together and then use some conditional statement. This will reduce the code
             //I need to add a mechanism that will take a receive buffer and sort out all of the data in it into requests so that my client can sort them out one by one.
             //The above below code works but my client receives the requests as a batch and only processes one request because i didnt implement anything that could handle bulk requests.
-            foreach (Client clients in clientManager.Clients)
-            {
-                try
-                {
-                    msgByte = TransmissionConverter(requestType, clients);
-                    client.clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, client.SendCallback, client.clientSocket);
-                }
-                catch(Exception e)
-                {
-
-                }
-
-            }
             msgByte = TransmissionConverter(requestType, client);
-
-            //use foreach method
             foreach (Client clients in clientManager.Clients)
             {
                 try
                 {
                     if (client.clientID != clients.clientID)
                     {
+                        if (requestType == 1)
+                        {
+                            msgByte1 = TransmissionConverter(requestType, clients);
+                            client.clientSocket.BeginSend(msgByte1, 0, msgByte1.Length, SocketFlags.None, client.SendCallback, client.clientSocket);
+                        }
                         clients.clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other client
                     }
-                    }
-                catch (Exception e)
-                {
 
                 }
+                catch(Exception e)
+                {
+                    Console.WriteLine("sendAllClients");
+                }
+
             }
+            //msgByte = TransmissionConverter(requestType, client);
+
+            ////use foreach method
+            //foreach (Client clients in clientManager.Clients)
+            //{
+            //    try
+            //    {
+            //        if (client.clientID != clients.clientID)
+            //        {
+            //            clients.clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other client
+            //        }
+            //        }
+            //    catch (Exception e)
+            //    {
+
+            //    }
+            //}
         }
 
         private static Byte[] TransmissionConverter(Byte requestType, Client client)
@@ -235,8 +246,13 @@ namespace ProxyServer
 
         public static void RemoveClient(int id)
         {
-            Server.sendAllClients((Byte)2, Clients.Find(DisconnectedClient => DisconnectedClient.clientID == id));
-            Clients.RemoveAt(Clients.FindIndex(x => x.clientID == id));
+            Client removedClient;
+            if (Clients.Exists(ClientToRemove => ClientToRemove.clientID == id))    //Prevent Multiple exceptions from calling for removal of the client by checking if client of such id exists
+            {
+                removedClient = Clients.Find(DisconnectedClient => DisconnectedClient.clientID == id);
+                Clients.RemoveAt(Clients.FindIndex(x => x.clientID == id));
+                Server.sendAllClients((Byte)2, removedClient);
+            }
         }
 
         private static int AssignID()    //Assign a unique ID to each client;
@@ -292,6 +308,7 @@ namespace ProxyServer
             }
             catch(Exception e)  //In the case of a disconnection, remove the disconnected client and update controller clients
             {
+                Console.WriteLine("ReceiveCallback");
                 clientManager.RemoveClient(clientID);
             }
         }

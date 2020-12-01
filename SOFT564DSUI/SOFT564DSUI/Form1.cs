@@ -64,26 +64,20 @@ namespace SOFT564DSUI
                         //    }
                         //}
 
-                        for (int xx = 0; xx <= listBox1.Items.Count; xx++)
-                        {
-                            foreach (ConnectedClients client in clientManager.Clients)
-                            {
+                        
 
-                                //This method crashes here but conceptually protects against multiple removal requests. Need to find out why it crashes and make it work.
-                                if (Convert.ToInt32(listBox1.Items[xx]) == client.clientID)  //If there is more than one to remove this won't work because the program will overwrite the first client to remove. Need to adjust this.
-                                {
-                                    remove = false;
-                                    break;
-                                }
-                                else
-                                {
-                                    remove = true;
-                                }
-                            }
-                            if (remove == true)
+                        for (int xx = 0; xx < listBox1.Items.Count; xx++)
+                        {
+                            Console.WriteLine("Listbox Counter: " + listBox1.Items.Count);
+                            Console.WriteLine("Loop Increment : " + xx);
+                            //This method crashes here but conceptually protects against multiple removal requests. Need to find out why it crashes and make it work.
+                            if (!clientManager.Clients.Exists(connectedClient => connectedClient.clientID == Convert.ToInt32(listBox1.Items[xx])))  //If there is more than one to remove this won't work because the program will overwrite the first client to remove. Need to adjust this.
                             {
                                 listBox1.Invoke((MethodInvoker)(() => listBox1.Items.RemoveAt(xx)));
+                                xx--;
+                                remove = false;
                             }
+
                         }
                         MessageHandler.removeClient = false;
                     }

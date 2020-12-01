@@ -23,6 +23,7 @@ namespace SOFT564DSUI
         public static int clientID;
 
         public static List<ConnectedClients> Clients = new List<ConnectedClients>();
+        
 
         public static void AddClient()
         {
@@ -32,6 +33,8 @@ namespace SOFT564DSUI
                 Console.WriteLine("Clients Connected" + client.clientID);
                 Console.WriteLine("Clients port" + client.clientPort);
             }
+
+            Clients.Exists(x => x.clientID == 1000);
         }
 
         public static void RemoveClient()
