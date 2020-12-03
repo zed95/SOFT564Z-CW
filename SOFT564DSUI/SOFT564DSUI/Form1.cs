@@ -32,41 +32,41 @@ namespace SOFT564DSUI
         {
             String Message;
             bool remove = true;
-            int x = BitConverter.ToInt32(TCPClient.buffer, 0);
             while(true) {
+
+
+                if (listBox1.Items.Count < clientManager.Clients.Count)
+                {
+                    foreach (ConnectedClients client in clientManager.Clients)
+                    {
+                        if (listBox1.FindStringExact(client.clientID.ToString()) == -1) //if there any client in the connectedclient list that isn't on the list then add it.
+                        {
+                            listBox1.Invoke((MethodInvoker)(() => listBox1.Items.Add(client.clientID)));    //Add client to the list of available clients.
+                        }
+                    }
+                }
+
+
+                if (listBox1.Items.Count > clientManager.Clients.Count)
+                {
+                    for (int xx = 0; xx < listBox1.Items.Count; xx++)
+                    {
+                        Console.WriteLine("Listbox Counter: " + listBox1.Items.Count);
+                        Console.WriteLine("Loop Increment : " + xx);
+                        if (!clientManager.Clients.Exists(connectedClient => connectedClient.clientID == Convert.ToInt32(listBox1.Items[xx])))  //If client id on the list does not belong to any clients in the connected client list remove it from the list.
+                        {
+                            listBox1.Invoke((MethodInvoker)(() => listBox1.Items.RemoveAt(xx)));    //Remove the client from the available client list.
+                            xx--;   //push the counter back once so that all items on the list are compared against the connected clients list. The list ios rearranged after removal of an item.
+                            remove = false;
+                        }
+
+                    }
+                }
+
+
+
                 if (TCPClient.dataAvailable)
                 {
-                    Message = Encoding.UTF8.GetString(TCPClient.buffer, 0, TCPClient.buffer.Length);
-                    if (listBox1.Items.Count < clientManager.Clients.Count)
-                    {
-                        foreach (ConnectedClients client in clientManager.Clients)
-                        {
-                            if (listBox1.FindStringExact(client.clientID.ToString()) == -1) //if there any client in the connectedclient list that isn't on the list then add it.
-                            {
-                                listBox1.Invoke((MethodInvoker)(() => listBox1.Items.Add(client.clientID)));    //Add client to the list of available clients.
-                            }
-                        }
-                    }       
-
-
-                    if (listBox1.Items.Count > clientManager.Clients.Count)
-                    {
-                        for (int xx = 0; xx < listBox1.Items.Count; xx++)
-                        {
-                            Console.WriteLine("Listbox Counter: " + listBox1.Items.Count);
-                            Console.WriteLine("Loop Increment : " + xx);
-                            if (!clientManager.Clients.Exists(connectedClient => connectedClient.clientID == Convert.ToInt32(listBox1.Items[xx])))  //If client id on the list does not belong to any clients in the connected client list remove it from the list.
-                            {
-                                listBox1.Invoke((MethodInvoker)(() => listBox1.Items.RemoveAt(xx)));    //Remove the client from the available client list.
-                                xx--;   //push the counter back once so that all items on the list are compared against the connected clients list. The list ios rearranged after removal of an item.
-                                remove = false;
-                            }
-
-                        }
-                    }   
-
-                 
-                    textBox2.Invoke((MethodInvoker)(() => textBox2.Text = Message));
                     TCPClient.dataAvailable = false;
                 }
                 if(!TCPClient.ConnectionLost)
@@ -100,7 +100,7 @@ namespace SOFT564DSUI
         {
             String id = listBox1.GetItemText(listBox1.SelectedItem);
             //TCPClient.send(textBox1.Text, id);
-            TCPClient.asyncSend(textBox1.Text, id);
+            ConnectionManager.Connections[0].asyncSend(textBox1.Text, id);
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)

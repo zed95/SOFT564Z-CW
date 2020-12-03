@@ -16,19 +16,19 @@ namespace SOFT564DSUI
         public static bool dataAvailable = false;
         public static bool ConnectionEstablished = false;
         public static bool ConnectionLost = false;
-        static private Socket socket;
-        static private IPEndPoint serverSocket;
-        static public byte[] buffer = new byte[1460];
+        public byte[] buffer = new byte[1460];
+
+        static Thread RequestHandlerThread = new Thread(MessageHandler.HandleRequest);
 
         static public void initClient(String serverIP, Int32 port)
         {
             try
             {
-                long longServerIP = IPtoLong(serverIP);
-                //The massive number represents the ip address
-                serverSocket = new IPEndPoint(longServerIP, port);
-                socket = new Socket(serverSocket.AddressFamily, SocketType.Stream, ProtocolType.Tcp); //setup a new socket to connect to the server.
-                socket.BeginConnect(serverSocket, ConnectionCallback, null);    //Start attempting to connect to the remote host.
+                if (!RequestHandlerThread.IsAlive)
+                {
+                    RequestHandlerThread.Start();
+                }
+                ConnectionManager.AddClient(IPtoLong(serverIP), port);
 
                 ConnectionEstablished = true;
             }   
@@ -36,48 +36,8 @@ namespace SOFT564DSUI
              {
                 ConnectionEstablished = false;
              }
-}
-
-
-        public static void ConnectionCallback(IAsyncResult asyncResult)
-        {
-            socket.EndConnect(asyncResult);     //stop requesting connection when connected;
-            //Start listening for incoming bytes.
-            socket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, ReceiveCallback, null); //start listening for incoming data from the server.
         }
 
-
-        public static void ReceiveCallback(IAsyncResult asyncResult)
-        {
-            //Get the number of received bytes
-            int bytesReceived = socket.EndReceive(asyncResult);
-
-            //if bytes available then do something
-            if(bytesReceived > 0)
-            {
-                Byte[] Message = new byte[bytesReceived];                   //Create a message buffer of the same size as bytes received.
-                Buffer.BlockCopy(buffer, 0, Message, 0, bytesReceived);     //Copy the contents of the buffer to the other buffer. the buffer used to receive data from the TCP stream is overwritten on every callback.
-                MessageHandler.HandleRequest(Message);                      //Process the request
-                dataAvailable = true;
-            }
-
-            //start waiting for bytes again. 
-            socket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, ReceiveCallback, null);
-        }
-
-        static public void asyncSend(String message, String ID)
-        {
-            int byteCount = Encoding.ASCII.GetByteCount(ID + message + 1);      //get the number of bytes in the message that I want to send
-            byte[] sendData = Encoding.ASCII.GetBytes(ID + message);            //convert data in an array of bytes.
-            Console.WriteLine("Sending");
-            socket.BeginSend(sendData, 0, sendData.Length, SocketFlags.None, SendCallback, socket);     //start the transmission process
-        }
-
-        //asynchronous sending callback witht the result of the transmission attempt.
-        public static void SendCallback(IAsyncResult asyncResult)
-        {
-
-        }
 
         static private long IPtoLong(String addressIP) {
             String number = "";
@@ -106,6 +66,169 @@ namespace SOFT564DSUI
 
     }
 
+    static class ConnectionManager
+    {
+        public static List<ConnectionInstance> Connections = new List<ConnectionInstance>();
 
+        public static void AddClient(long ip, int port)
+        {
+            Connections.Add(new ConnectionInstance(ip, port, AssignID()));                            //Add new connection to the list
+        }
+
+        public static void RemoveClient(int id)
+        {
+            if (Connections.Exists(ClientToRemove => ClientToRemove.connectionID == id))              //Prevent Multiple exceptions from calling for removal of the client by checking if client of such id exists
+            {
+                Connections.RemoveAt(Connections.FindIndex(x => x.connectionID == id));               //Remove the client from the list
+                //change the request type numbers into meaningful constants.
+            }
+        }
+
+        //Generates a unique client id for newly connected clients.
+        private static int AssignID()
+        {
+            int newID = 0;
+
+            foreach (ConnectionInstance client in Connections)
+            {
+                newID += client.connectionID;
+            }
+
+            newID += Connections.Count;
+
+            return newID;
+        }
+
+    }
+
+    class ConnectionInstance
+    {
+        public int connectionID;
+        private Socket socket;
+        private IPEndPoint endPoint;
+        public Byte[] callbackBuffer = new byte[1460];
+        private Byte[] unqueuedBytesBuffer = new byte[0];
+
+
+        public ConnectionInstance(long ip, int port, int id)
+        {
+            connectionID = id;
+            ConnectClientTo(ip, port);
+        }
+
+        private void ConnectClientTo(long ip, int port)
+        {
+            try
+            {
+                //The massive number represents the ip address
+                endPoint = new IPEndPoint(ip, port);
+                socket = new Socket(endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp); //setup a new socket to connect to the server.
+                socket.BeginConnect(endPoint, ConnectionCallback, null);    //Start attempting to connect to the remote host.
+
+                //ConnectionEstablished = true;
+            }
+            catch (Exception e)
+            {
+                //ConnectionEstablished = false;
+            }
+        }
+
+        private void ConnectionCallback(IAsyncResult asyncResult)
+        {
+            socket.EndConnect(asyncResult);     //stop requesting connection when connected;
+            //Start listening for incoming bytes.
+            socket.BeginReceive(callbackBuffer, 0, callbackBuffer.Length, SocketFlags.None, ReceiveCallback, null); //start listening for incoming data from the server.
+        }
+
+
+        private void ReceiveCallback(IAsyncResult asyncResult)
+        {
+            //Get the number of received bytes
+            int bytesReceived = socket.EndReceive(asyncResult);
+            int bytesLeft = bytesReceived + unqueuedBytesBuffer.Length; //the number of bytes is equal to the number of bytes that have not yet been processed + the number of new bytes that arrived.
+            int copyOffset = unqueuedBytesBuffer.Length;        //new bytes to be copy at an offset of the of the old array before its size increases.
+            Queue<Byte[]> tempQueue = new Queue<byte[]>();
+
+            //if bytes available then do something
+            if (bytesReceived > 0)
+            {
+                Array.Resize(ref unqueuedBytesBuffer, bytesLeft);   //new size of array = previous bytes in the array + bytes that arrived.
+                Buffer.BlockCopy(callbackBuffer, 0, unqueuedBytesBuffer, copyOffset, bytesReceived); //copy new bytes from callback buffer into the unqued bytes are for processing.
+                Console.WriteLine("Number of bytes available: " + bytesLeft);
+                while (bytesLeft > 0)
+                {
+                    switch (unqueuedBytesBuffer[0])
+                    {
+                        case RequestTypes.ListAddClient:
+                            if (bytesLeft >= 18)
+                            {
+                                tempQueue.Enqueue(ExtractRequest(unqueuedBytesBuffer, 18));
+                                bytesLeft -= 18;
+                                Buffer.BlockCopy(unqueuedBytesBuffer, 18, unqueuedBytesBuffer, 0, bytesLeft);
+                                Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
+                            }
+                            else
+                            {
+                                break;
+                            }
+                            break;
+                        case RequestTypes.ListRemoveClient:
+                            if (bytesLeft >= 6)
+                            {
+                                tempQueue.Enqueue(ExtractRequest(unqueuedBytesBuffer, 6));
+                                bytesLeft -= 6;
+                                Buffer.BlockCopy(unqueuedBytesBuffer, 6, unqueuedBytesBuffer, 0, bytesLeft);
+                                Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
+                            }
+                            else
+                            {
+                                break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+
+                }
+
+                Console.WriteLine("Connection " + connectionID + " is requesting queue access");
+                MessageHandler.RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
+                Console.WriteLine("Connection " + connectionID + " has queue access");
+                while (tempQueue.Count > 0) //Keep adding to request queue until the temporary queue is empty.
+                {
+                    MessageHandler.RequestQueue.Enqueue(tempQueue.Dequeue());               //Add request data to the queue
+                }
+                Console.WriteLine("Connection " + connectionID + " is releasing mutex");
+                MessageHandler.RequestQueueMutex.ReleaseMutex();            //Release the mutex
+            }
+
+            //start waiting for bytes again. 
+            socket.BeginReceive(callbackBuffer, 0, callbackBuffer.Length, SocketFlags.None, ReceiveCallback, null);
+        }
+
+
+        public void asyncSend(String message, String ID)
+        {
+            int byteCount = Encoding.ASCII.GetByteCount(ID + message + 1);      //get the number of bytes in the message that I want to send
+            byte[] sendData = Encoding.ASCII.GetBytes(ID + message);            //convert data in an array of bytes.
+            Console.WriteLine("Sending");
+            socket.BeginSend(sendData, 0, sendData.Length, SocketFlags.None, SendCallback, socket);     //start the transmission process
+        }
+
+        //asynchronous sending callback witht the result of the transmission attempt.
+        private void SendCallback(IAsyncResult asyncResult)
+        {
+
+        }
+
+        private Byte[] ExtractRequest(Byte[] bytes, int size)
+        {
+            Byte[] requestBytes = new byte[size];
+
+            Buffer.BlockCopy(bytes, 0, requestBytes, 0, size);
+            return requestBytes;
+        }
+
+    }
 
 }

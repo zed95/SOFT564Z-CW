@@ -31,7 +31,8 @@ namespace ProxyServer
             {
                 Console.WriteLine("");
                 ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-                ipAddress = ipHostInfo.AddressList[1];
+                ipAddress = ipHostInfo.AddressList[1].MapToIPv4();
+                //ipAddress = ipHostInfo.AddressList[0].MapToIPv4();
                 localEndPoint = new IPEndPoint(ipAddress, 11000);
 
 
@@ -46,6 +47,7 @@ namespace ProxyServer
             catch (Exception e)
             {
                 Console.WriteLine("Error");
+                Console.WriteLine(e);
             }
 
         }
