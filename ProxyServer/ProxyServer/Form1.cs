@@ -32,12 +32,7 @@ namespace ProxyServer
         {
             while (true)
             {
-                if (Server.x == true)
-                {
-                    buf = clientManager.Clients[0].buffer;
-                    Msg = buf.ToString();
-                    textBox1.Invoke((MethodInvoker)(() => textBox1.Text = Server.data));
-                }
+
             }
         }
 

@@ -21,7 +21,8 @@ namespace ProxyServer
         public static string data = null;
         static public bool x = false;
         static public int i = 0;
-        
+        static Thread RequestHandlerThread = new Thread(RequestHandler.HandleRequest);
+
 
 
         static public void initServer()
@@ -29,12 +30,15 @@ namespace ProxyServer
 
             try
             {
-                Console.WriteLine("");
                 ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
                 ipAddress = ipHostInfo.AddressList[1].MapToIPv4();
                 //ipAddress = ipHostInfo.AddressList[0].MapToIPv4();
                 localEndPoint = new IPEndPoint(ipAddress, 11000);
 
+                if (!RequestHandlerThread.IsAlive)
+                {
+                    RequestHandlerThread.Start();
+                }
 
                 s = ipAddress.ToString();
                 listenerSocket = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
@@ -215,13 +219,14 @@ namespace ProxyServer
     {
         public Socket clientSocket;
         public int clientID;
-        public byte[] buffer;
+        public byte[] callbackBuffer;
+        private Byte[] unqueuedBytesBuffer = new byte[0];
 
         public Client(Socket socket, int id)
         {
             clientSocket = socket;
             clientID = id;
-            buffer = new byte[1024];
+            callbackBuffer = new byte[1024];
 
             clientReceive();
         }
@@ -229,25 +234,75 @@ namespace ProxyServer
         //calls the BeginReceive function to start receiving incoming data to the socket.
         public void clientReceive()
         {
-            clientSocket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, ReceiveCallback, null);
+            clientSocket.BeginReceive(callbackBuffer, 0, callbackBuffer.Length, SocketFlags.None, ReceiveCallback, null);
         }
 
         //function called in response to data being received.
         private void ReceiveCallback(IAsyncResult asyncResult)
         {
+            int bytesReceived;
+            int bytesLeft; 
+            int copyOffset = unqueuedBytesBuffer.Length;        //new bytes to be copy at an offset of the of the old array before its size increases.
+            Queue<Byte[]> tempQueue = new Queue<byte[]>();
+
             try
             {
-                int received = clientSocket.EndReceive(asyncResult);    //how many bytes we got
-                if (received > 0)    //do something if we received any bytes
+                bytesReceived = clientSocket.EndReceive(asyncResult);    //how many bytes we got
+                bytesLeft = bytesReceived + unqueuedBytesBuffer.Length; //the number of bytes is equal to the number of bytes that have not yet been processed + the number of new bytes that arrived.
+
+                if (bytesReceived > 0)    //do something if we received any bytes
                 {
-                    //Adapt the receive function to be abel to handle requests. Copy the request handler and add some access control to it as multiple clients can access the server
-                    //therefore there will be multiple requests coming off of different threads meaning that resource sharing will have to be implemented in order to stop
-                    //race conditions from happenning and data of one thread being corrupted or overwritten by another.
-                    Server.data = Encoding.Default.GetString(buffer);
-                    Server.x = true;
-                    Console.WriteLine(Server.data.Trim());
-                    Array.Clear(buffer, 0, buffer.Length);
+                    Array.Resize(ref unqueuedBytesBuffer, bytesLeft);   //new size of array = previous bytes in the array + bytes that arrived.
+                    Buffer.BlockCopy(callbackBuffer, 0, unqueuedBytesBuffer, copyOffset, bytesReceived); //copy new bytes from callback buffer into the unqued bytes are for processing.
+                    Console.WriteLine("Number of bytes available: " + bytesLeft);
                     clientReceive();
+
+                    //---
+
+                    while (bytesLeft > 0)
+                    {
+                        switch (unqueuedBytesBuffer[0])
+                        {
+                            case RequestTypes.ListAddClient:
+                                if (bytesLeft >= 18)
+                                {
+                                    tempQueue.Enqueue(ExtractRequest(unqueuedBytesBuffer, 18));
+                                    bytesLeft -= 18;
+                                    Buffer.BlockCopy(unqueuedBytesBuffer, 18, unqueuedBytesBuffer, 0, bytesLeft);
+                                    Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
+                                }
+                                else
+                                {
+                                    break;
+                                }
+                                break;
+                            case RequestTypes.ListRemoveClient:
+                                if (bytesLeft >= 6)
+                                {
+                                    tempQueue.Enqueue(ExtractRequest(unqueuedBytesBuffer, 6));
+                                    bytesLeft -= 6;
+                                    Buffer.BlockCopy(unqueuedBytesBuffer, 6, unqueuedBytesBuffer, 0, bytesLeft);
+                                    Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
+                                }
+                                else
+                                {
+                                    break;
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+
+                    }
+
+                    RequestHandler.RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
+                    while (tempQueue.Count > 0) //Keep adding to request queue until the temporary queue is empty.
+                    {
+                        RequestHandler.RequestQueue.Enqueue(tempQueue.Dequeue());               //Add request data to the queue
+                    }
+                    RequestHandler.RequestQueueMutex.ReleaseMutex();            //Release the mutex
+
+
                 }
             }
             catch(Exception e)  //In the case of a disconnection, remove the disconnected client and update controller clients
@@ -285,6 +340,15 @@ namespace ProxyServer
             //{
             //    Console.WriteLine("Client Sent Bytes");
             //}
+        }
+
+
+        private Byte[] ExtractRequest(Byte[] bytes, int size)
+        {
+            Byte[] requestBytes = new byte[size];
+
+            Buffer.BlockCopy(bytes, 0, requestBytes, 0, size);
+            return requestBytes;
         }
 
     }
