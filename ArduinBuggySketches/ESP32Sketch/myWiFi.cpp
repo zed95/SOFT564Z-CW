@@ -49,3 +49,17 @@ void connectToServer() {
 void setupListener() {
     listener.begin();
 }
+
+//Need to decide what form im going to send the message in and then alter this function
+void sendWiFi(WiFiClient Client, int message) {
+    Client.write(message);
+}
+
+//need to de
+int receiveWiFi(WiFiClient Client) {
+
+  while (Client.available() > 0) {
+      //Add code to read in the data from the client
+  }
+
+}
