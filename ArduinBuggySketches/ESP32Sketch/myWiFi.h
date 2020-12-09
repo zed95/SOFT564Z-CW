@@ -1,5 +1,5 @@
 
 
-void setupWiFi();
-void connectToServer();
-void setupListener();
+void SetupWiFi();
+void ConnectToServer();
+void SetupListener();

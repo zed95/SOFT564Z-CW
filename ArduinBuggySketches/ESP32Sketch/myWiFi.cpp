@@ -10,7 +10,7 @@ WiFiClient controllerClient;        //instance that will connect with the contro
 const char* serverIP = "192.168.0.24";
 const int serverPort = 11000;
 
-void setupWiFi() {
+void SetupWiFi() {
   //Network ssid and password
   const char* ssid = "VM210ED8";
   const char* password = "ysZgas5curvr";
@@ -36,7 +36,7 @@ void setupWiFi() {
  
 }
 
-void connectToServer() {
+void ConnectToServer() {
     // Connect to server
   Serial.println(WiFi.localIP());   //print my ip
   while(controllerClient.connect(serverIP, serverPort)) 
@@ -46,17 +46,17 @@ void connectToServer() {
   Serial.println("Connected to server");
 }
 
-void setupListener() {
+void SetupListener() {
     listener.begin();
 }
 
 //Need to decide what form im going to send the message in and then alter this function
-void sendWiFi(WiFiClient Client, int message) {
+void SendWiFi(WiFiClient Client, int message) {
     Client.write(message);
 }
 
 //need to de
-int receiveWiFi(WiFiClient Client) {
+int ReceiveWiFi(WiFiClient Client) {
 
   while (Client.available() > 0) {
       //Add code to read in the data from the client

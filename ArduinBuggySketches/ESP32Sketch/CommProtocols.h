@@ -10,5 +10,5 @@
 #define ESP32_UART2_TX  17
 
 //functions
-void setupSerial(int buadRate);
-void setupI2C();
+void SetupSerial(int buadRate);
+void SetupI2C();
