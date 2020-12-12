@@ -22,43 +22,50 @@ void SetupRequestHandler() {
 
 
 void HandleRequest(void *parameter) {
-byte requestArray[queueSize];
+  byte requestArray[queueSize];
 
   while (1) {
-    while(bytesInQueue > 0) {
+    while (bytesInQueue > 0) {
       xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
-       RemoveQueue(&requestArray[0], 1);
-       switch(requestArray[0]) {
+      RemoveQueue(&requestArray[0], 1);
+      switch (requestArray[0]) {
         case 1:
           //Now remove n bytes based on the request type.
           //when calling the RemoveQueue function I will have to pass the requestArray[1] as the [0] position has the request type in it.
           //Check whether there are enough bytes in the array for the request type.
           //If there is not enough bytes don't carry out the operation and just save the request type until there are more bytes in the queue.
-        break;
+          break;
         case 2:
           //Now remove n bytes based on the request type.
           //when calling the RemoveQueue function I will have to pass the requestArray[1] as the [0] position has the request type in it.
           //Check whether there are enough bytes in the array for the request type.
           //If there is not enough bytes don't carry out the operation and just save the request type until there are more bytes in the queue.
-        break;
-        default:
-        break;
-       } 
-      xSemaphoreGive(requestQueueMutex);
 
-      //Dont carry out the below operations if there aren't enough bytes in the buffer for the next operation and wait until more arrive.
-      switch(requestArray[0]) {
-        case 1:
-          //Call the function/s to carry out the requests
-        break;
-        case 2:
-          //Call the function/s to carry out the requests
-        break;
+          //----Prototype for the above requirement---//
+          if (bytesInQueue < 2) {
+            xSemaphoreGive(requestQueueMutex);                      //Give up mutex to allow more data to be added to queue
+            while (bytesInQueue < 2) {}
+            xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
+            RemoveQueue(&requestArray[1], 2);
+            xSemaphoreGive(requestQueueMutex);
+            //Call the function to carry out the request
+          }
+          else {
+            RemoveQueue(&requestArray[1], 2);
+            xSemaphoreGive(requestQueueMutex);
+            //Call the function to carry out the request
+          }
+          break;
+        case REQ_ENV_DATA:
+           //Prototype is not needed in this case as this request only takes the request ID
+           //Just call the function to extract the data and send it over to the client.
+           //Create a handler function that carries out the request.
+          break;
         default:
-        break;
-       } 
+          break;
+      }
     }
-    
+
   }
 }
 
@@ -85,11 +92,11 @@ void AddQueue(byte *byteArray, int nBytes) {
 
 void RemoveQueue(byte *byteArray, int nBytes) {
 
-  for(int i = 0; i < nBytes; i++) {
-    if(bytesInQueue > 0) { 
+  for (int i = 0; i < nBytes; i++) {
+    if (bytesInQueue > 0) {
       *(byteArray + i) = requestQueue[oldestByte];
       bytesInQueue--;
-      if(oldestByte == (queueSize -1)) {
+      if (oldestByte == (queueSize - 1)) {
         oldestByte = 0;
       }
       else {
@@ -97,7 +104,7 @@ void RemoveQueue(byte *byteArray, int nBytes) {
       }
     }
     else {
-      //Queue is empty decide what to do. Probably add some error codes. 
+      //Queue is empty decide what to do. Probably add some error codes.
       //-queue is empty
       //-tried to remove more bytes than there were in the queue
     }
