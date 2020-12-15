@@ -60,4 +60,21 @@ namespace SOFT564DSUI
             clientID = id;
         }
     }
+
+
+    static class EnvData
+    {
+        public static int temperature = 0;
+        public static int humidity = 0;
+        public static int lIntensity = 0;
+
+        //Checks whether the temperature is negative or positive and converts to the correct magnitude.
+        public static void CheckTempMagnitude()
+        {
+            if((temperature & 0x8000) == 0x8000)
+            {
+                temperature = (temperature & 0x3fff) * (-1);
+            }
+        }
+    }
 }

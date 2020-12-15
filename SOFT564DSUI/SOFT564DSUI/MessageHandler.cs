@@ -76,6 +76,14 @@ namespace SOFT564DSUI
                             removeClient = true;
 
                             break;
+                        case RequestTypes.RecEnvData:
+                        Console.WriteLine("Received env data");
+                            EnvData.temperature = BitConverter.ToInt16(request, 1);
+                            EnvData.CheckTempMagnitude();
+                            EnvData.humidity = BitConverter.ToChar(request, 3);
+                            EnvData.lIntensity = BitConverter.ToInt16(request, 4);
+                        break;
+
                         default:
 
                             break;
@@ -89,7 +97,9 @@ namespace SOFT564DSUI
     //A class with a list of all possible request types.
     static class RequestTypes
     {
-        public const int ListAddClient = 1;
+        public const int ListAddClient    = 1;
         public const int ListRemoveClient = 2;
+        public const int SendEnvData      = 3;
+        public const int RecEnvData       = 4;
     }
 }

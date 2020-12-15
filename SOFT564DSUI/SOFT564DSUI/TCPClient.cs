@@ -157,7 +157,11 @@ namespace SOFT564DSUI
                 Console.WriteLine("Number of bytes available: " + bytesLeft);
                 while (bytesLeft > 0)
                 {
-                    switch (unqueuedBytesBuffer[0])
+                    for(int x = 0; x < bytesLeft; x++)
+                    {
+                        Console.WriteLine("unqueued buffer bytes: " + unqueuedBytesBuffer[x]);
+                    }
+                    switch (unqueuedBytesBuffer[0])     //if the data sent does not match any request types the while loop freezes as nothing is currently done with that byte. Need to fix that.----------mkhn
                     {
                         case RequestTypes.ListAddClient:
                             if (bytesLeft >= 18)
@@ -185,10 +189,25 @@ namespace SOFT564DSUI
                                 break;
                             }
                             break;
+                        case RequestTypes.RecEnvData:
+                            if (bytesLeft >= 6)
+                            {
+                                tempQueue.Enqueue(ExtractRequest(unqueuedBytesBuffer, 6));
+                                bytesLeft -= 6;
+                                Buffer.BlockCopy(unqueuedBytesBuffer, 6, unqueuedBytesBuffer, 0, bytesLeft);
+                                Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
+                            }
+                            else
+                            {
+                                break; 
+                            }
+                            break;
                         default:
                             break;
                     }
 
+                    break;
+                    
                 }
 
                 Console.WriteLine("Connection " + connectionID + " is requesting queue access");
@@ -209,8 +228,9 @@ namespace SOFT564DSUI
 
         public void asyncSend(String message, String ID)
         {
-            int byteCount = Encoding.ASCII.GetByteCount(ID + message + 1);      //get the number of bytes in the message that I want to send
-            byte[] sendData = Encoding.ASCII.GetBytes(ID + message);            //convert data in an array of bytes.
+            //int byteCount = Encoding.ASCII.GetByteCount(ID + message + 1);      //get the number of bytes in the message that I want to send
+            //byte[] sendData = Encoding.ASCII.GetBytes(ID + message);            //convert data in an array of bytes.
+            byte[] sendData = BitConverter.GetBytes((Byte)3);          //convert data in an array of bytes.
             Console.WriteLine("Sending");
             socket.BeginSend(sendData, 0, sendData.Length, SocketFlags.None, SendCallback, socket);     //start the transmission process
         }

@@ -11,10 +11,12 @@ int newestByte = 0;
 int bytesInQueue = 0; //used to check whether queue is full or empty.
 
 void SetupRequestHandler() {
+  requestQueueMutex = xSemaphoreCreateMutex();
+  
   xTaskCreatePinnedToCore(
     HandleRequest,    // Function that should be called
     "Request Handler",  // Name of the task (for debugging)
-    1000,            // Stack size (bytes)
+    10000,            // Stack size (bytes)
     NULL,            // Parameter to pass
     1,               // Task priority
     &Task1,          // Task handle
@@ -28,8 +30,10 @@ void HandleRequest(void *parameter) {
 
   while (1) {
     while (bytesInQueue > 0) {
+      Serial.println("Im here");
       xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
       RemoveQueue(&requestArray[0], 1);
+      Serial.println(requestArray[0]);
       switch (requestArray[0]) {
         case 1:
           //Now remove n bytes based on the request type.
@@ -62,13 +66,16 @@ void HandleRequest(void *parameter) {
            //Prototype is not needed in this case as this request only takes the request ID
            //Just call the function to extract the data and send it over to the client.
            //Create a handler function that carries out the request.
-           void SendEnvData();
+           Serial.println("Here Now");
+           SendEnvData();
+           xSemaphoreGive(requestQueueMutex);
           break;
         default:
+          xSemaphoreGive(requestQueueMutex);
           break;
       }
     }
-
+    vTaskDelay(pdMS_TO_TICKS(50));
   }
 }
 
@@ -120,6 +127,12 @@ void SendEnvData() {
   envData[0] = 4;               //Indicate request type
   ReadBME280Data(&envData[1]);  //Get BME280 data
   ReadLDR(&envData[4]);
+  Serial.println(envData[0]);
+  Serial.println(envData[1]);
+  Serial.println(envData[2]);
+  Serial.println(envData[3]);
+  Serial.println(envData[4]);
+  Serial.println(envData[5]);
   SendWiFi(controllerClient, &envData[0], sizeof(envData));
   
 }

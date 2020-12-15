@@ -1,4 +1,5 @@
 #include "myWiFi.h"
+#include "RequestHandler.h"
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <WiFiServer.h>
@@ -7,13 +8,19 @@
 WiFiServer listener(80);            //Create a listener on port n.
 WiFiClient serverClient;            //create instance of a client that will connect to the server so that the buggy can be seen by controller clients in the system.
 WiFiClient controllerClient;        //instance that will connect with the controller client that has been granted permission to control the buggy.
-const char* serverIP = "192.168.0.24";
+const char* serverIP = "192.168.0.155";
 const int serverPort = 11000;
 
 void SetupWiFi() {
   //Network ssid and password
-  const char* ssid = "VM210ED8";
-  const char* password = "ysZgas5curvr";
+
+  //4 Marlborough
+  //  const char* ssid = "VM210ED8";
+  //  const char* password = "ysZgas5curvr";
+
+  //46 Wilson
+  const char* ssid = "VM5625627";
+  const char* password = "9shxfpSCjwmb";
 
   //const char* ssid = "zHotspot";
   // const char* password = "Cv7k09mp!";
@@ -24,7 +31,7 @@ void SetupWiFi() {
   IPAddress subnet(255, 255, 255, 0);
   IPAddress dns1(192, 168, 0, 1);
   //IPAddress dns2(192, 168, 0, 1);
-  WiFi.config(myIP, gateway, subnet, dns1); 
+  WiFi.config(myIP, gateway, subnet, dns1);
 
   //Connect to WiFi
   WiFi.begin(ssid, password);
@@ -33,36 +40,60 @@ void SetupWiFi() {
     Serial.println("Connecting to WiFi..");
   }
   Serial.println("Connected to the WiFi network");
- 
+  Serial.println(WiFi.localIP());   //print my ip
+
 }
 
 void ConnectToServer() {
-    // Connect to server
-  Serial.println(WiFi.localIP());   //print my ip
-  while(controllerClient.connect(serverIP, serverPort)) 
+  // Connect to server
+  if (!serverClient.connect(serverIP, serverPort))
   {
-      Serial.println("Connecting to server..");
+    Serial.println("Failed to connect to server.");
   }
   Serial.println("Connected to server");
 }
 
 void SetupListener() {
-    listener.begin();
+  listener.begin();
+
+  while (1) {
+    controllerClient = listener.available();
+    if (controllerClient) {
+      break;
+    }
+  }
 }
 
 
 void SendWiFi(WiFiClient Client, byte *request, int requestSize) {
-  
-  for(int x = 0; x <= requestSize; x++) {
-    Client.write(*(request + x));
+byte *buff = (byte *)malloc(requestSize * sizeof(byte));
+
+
+  for (int x = 0; x < requestSize; x++) {
+//    Client.write(*(request + x));
+    buff[x] = *(request + x);
   }
+
+  Client.write((uint8_t*) buff, requestSize*sizeof(byte));
+  free(buff);
 }
 
 //need to de
 int ReceiveWiFi(WiFiClient Client) {
+  byte dataBuffer[1000];
+  int byteCount = 0;
 
-  while (Client.available() > 0) {
+  if (Client.connected()) {
+    while (Client.available() > 0) {
       //Add code to read in the data from the client
-  }
+      dataBuffer[byteCount] = Client.read();
+      byteCount++;
+    }
 
+    if (byteCount > 0) {
+      xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
+      AddQueue(&dataBuffer[0], byteCount);
+      xSemaphoreGive(requestQueueMutex);
+    }
+  }
 }
