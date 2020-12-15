@@ -50,9 +50,12 @@ void SetupListener() {
     listener.begin();
 }
 
-//Need to decide what form im going to send the message in and then alter this function
-void SendWiFi(WiFiClient Client, int message) {
-    Client.write(message);
+
+void SendWiFi(WiFiClient Client, byte *request, int requestSize) {
+  
+  for(int x = 0; x <= requestSize; x++) {
+    Client.write(*(request + x));
+  }
 }
 
 //need to de

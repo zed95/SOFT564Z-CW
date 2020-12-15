@@ -1,4 +1,6 @@
 #include "RequestHandler.h"
+#include "Sensors.h"
+#include "myWiFi.h"
 
 TaskHandle_t  Task1;
 SemaphoreHandle_t requestQueueMutex;
@@ -60,6 +62,7 @@ void HandleRequest(void *parameter) {
            //Prototype is not needed in this case as this request only takes the request ID
            //Just call the function to extract the data and send it over to the client.
            //Create a handler function that carries out the request.
+           void SendEnvData();
           break;
         default:
           break;
@@ -109,4 +112,14 @@ void RemoveQueue(byte *byteArray, int nBytes) {
       //-tried to remove more bytes than there were in the queue
     }
   }
+}
+
+void SendEnvData() {
+  byte envData[6];
+
+  envData[0] = 4;               //Indicate request type
+  ReadBME280Data(&envData[1]);  //Get BME280 data
+  ReadLDR(&envData[4]);
+  SendWiFi(controllerClient, &envData[0], sizeof(envData));
+  
 }

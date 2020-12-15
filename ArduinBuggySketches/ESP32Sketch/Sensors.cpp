@@ -24,11 +24,12 @@ void SetupBME280() {
   
 }
 
-
 //Gets temperature, humidity and pressure from bme280
-dataBME ReadBME280Data() {
+void ReadBME280Data(byte *byteArray) {
    float temperature, humidity, pressure;
-   dataBME bmeData;
+   uint16_t temperature_16b, pressure_16b;
+   uint8_t humidity_8b;
+   byte *dataBytes;
 
    BME280::TempUnit tempUnit(BME280::TempUnit_Celsius);
    BME280::PresUnit presUnit(BME280::PresUnit_hPa);
@@ -45,31 +46,43 @@ dataBME ReadBME280Data() {
 //   Serial.print(pressure);
 //   Serial.println("Pa");
 //   delay(1000);
-   
-  return CompressBmeData(pressure, temperature, humidity);
-}
 
-dataBME CompressBmeData(float presure, float temperature, float humidity) {
-  dataBME bmeData;
 
-  //Convert temperature from float to integer.
+  //Convert temperature from float to integer to reduce the sizes.
   if(temperature > 0) {
-    bmeData.temperature = (uint16_t)(temperature * 100);          //multiply by 100 to turn decimal values into integers.
-    bmeData.temperature = (bmeData.temperature & (0x7FFF));       //Set bit 15 to 0 to indicate positive value
+    temperature_16b = (uint16_t)(temperature * 100);          //multiply by 100 to turn decimal values into integers.
+    temperature_16b = (temperature_16b & (0x7FFF));       //Set bit 15 to 0 to indicate positive value
   }
   else {
-    bmeData.temperature = (uint16_t)((temperature * -1) * 100);   //turn negative into positive and multiply by 100 to turn decimal values into integers.
-    bmeData.temperature = (bmeData.temperature | (0x01 << 15));   //Set bit 15 to 1 to indicate negative value  
+    temperature_16b = (uint16_t)((temperature * -1) * 100);   //turn negative into positive and multiply by 100 to turn decimal values into integers.
+    temperature_16b = (temperature_16b | (0x01 << 15));   //Set bit 15 to 1 to indicate negative value  
   }
-
+   
   //Get humidity without the decimal values as they have little relevance.
-  bmeData.humidity = (uint8_t)humidity;
+  humidity_8b = (uint8_t)humidity;
+
+  //Store the compressed BME280 data in the passed array
+  dataBytes = (uint8_t*)&temperature_16b;   //Point dataBytes to first byte of temperature variable
+  *byteArray =  dataBytes[0];     //Store first byte of temperature
+  *(byteArray + 1) =  dataBytes[1];     //Store second byte of temperature
+  dataBytes = (uint8_t*)&humidity_8b;      //Point dataBytes to humidity variable
+  *(byteArray + 2) =  dataBytes[0];     //Store the humidity byte
+  
 
   //Do nothing to pressure as we don't need it.
-
-  return bmeData;
 }
 
-uint16_t ReadLDR() {
-  return analogRead(LDR_PIN);
+
+
+void ReadLDR(byte *byteArray) {
+  uint16_t ldrVal;
+  byte *dataBytes;
+  
+  ldrVal = analogRead(LDR_PIN);
+  
+  dataBytes = (uint8_t*)&ldrVal;
+  *byteArray = dataBytes[0];
+  *(byteArray + 1) = dataBytes[1];
+  
+  
 }
