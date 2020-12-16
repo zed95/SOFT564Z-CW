@@ -65,16 +65,20 @@ namespace SOFT564DSUI
     static class EnvData
     {
         public static int temperature = 0;
+        public static float ftemperature = 0;
         public static int humidity = 0;
         public static int lIntensity = 0;
 
         //Checks whether the temperature is negative or positive and converts to the correct magnitude.
-        public static void CheckTempMagnitude()
+        public static void TempToFloat()
         {
             if((temperature & 0x8000) == 0x8000)
             {
                 temperature = (temperature & 0x3fff) * (-1);
             }
+
+            ftemperature = temperature * 0.01f;
+
         }
     }
 }

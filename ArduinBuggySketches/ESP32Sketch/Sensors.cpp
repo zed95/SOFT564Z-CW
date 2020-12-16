@@ -79,6 +79,7 @@ void ReadLDR(byte *byteArray) {
   byte *dataBytes;
   
   ldrVal = analogRead(LDR_PIN);
+  Serial.println(ldrVal);
   
   dataBytes = (uint8_t*)&ldrVal;
   *byteArray = dataBytes[0];

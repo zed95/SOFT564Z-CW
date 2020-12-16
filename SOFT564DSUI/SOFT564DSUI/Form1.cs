@@ -63,9 +63,9 @@ namespace SOFT564DSUI
                     }
                 }
 
-                if((Int32.Parse(TempTextBox.Text) != EnvData.temperature) || (Int32.Parse(HumTextBox.Text) != EnvData.humidity) || (Int32.Parse(LIntTextBox.Text) != EnvData.lIntensity))
+                if((float.Parse(TempTextBox.Text) != EnvData.ftemperature) || (Int32.Parse(HumTextBox.Text) != EnvData.humidity) || (Int32.Parse(LIntTextBox.Text) != EnvData.lIntensity))
                 {
-                    TempTextBox.Invoke((MethodInvoker)(() => TempTextBox.Text = EnvData.temperature.ToString()));
+                    TempTextBox.Invoke((MethodInvoker)(() => TempTextBox.Text = EnvData.ftemperature.ToString()));
                     HumTextBox.Invoke((MethodInvoker)(() => HumTextBox.Text = EnvData.humidity.ToString()));
                     LIntTextBox.Invoke((MethodInvoker)(() => LIntTextBox.Text = EnvData.lIntensity.ToString()));
                 }

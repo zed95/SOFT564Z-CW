@@ -66,16 +66,8 @@ void SetupListener() {
 
 
 void SendWiFi(WiFiClient Client, byte *request, int requestSize) {
-byte *buff = (byte *)malloc(requestSize * sizeof(byte));
-
-
-  for (int x = 0; x < requestSize; x++) {
-//    Client.write(*(request + x));
-    buff[x] = *(request + x);
-  }
-
-  Client.write((uint8_t*) buff, requestSize*sizeof(byte));
-  free(buff);
+  //send a number of bytes specified by 'requestSize' starting at 'request' address
+  Client.write(request, requestSize*sizeof(byte));
 }
 
 //need to de

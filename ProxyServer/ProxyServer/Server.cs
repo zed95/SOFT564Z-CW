@@ -273,7 +273,8 @@ namespace ProxyServer
                                 }
                                 else
                                 {
-                                    break;
+                                    //if the command is recognised but not all required bytes arrived then jump 'breakout' to continue with the code
+                                    goto breakout;
                                 }
                                 break;
                             case RequestTypes.ListRemoveClient:
@@ -286,7 +287,8 @@ namespace ProxyServer
                                 }
                                 else
                                 {
-                                    break;
+                                    //if the command is recognised but not all required bytes arrived then jump 'breakout' to continue with the code
+                                    goto breakout;
                                 }
                                 break;
                             default:
@@ -294,6 +296,10 @@ namespace ProxyServer
                         }
 
                     }
+
+                     //if the command is recognised but not all required bytes arrived then jump to here to continue with the code
+                    breakout:
+
 
                     RequestHandler.RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
                     while (tempQueue.Count > 0) //Keep adding to request queue until the temporary queue is empty.

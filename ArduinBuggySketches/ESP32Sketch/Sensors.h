@@ -1,5 +1,5 @@
 
-#define LDR_PIN   15
+#define LDR_PIN   36
 
 
 //Functions

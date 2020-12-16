@@ -173,7 +173,8 @@ namespace SOFT564DSUI
                             }
                             else
                             {
-                                break;
+                                //if the command is recognised but not all required bytes arrived then jump 'breakout' to continue with the code
+                                goto breakout;
                             }
                             break;
                         case RequestTypes.ListRemoveClient:
@@ -186,7 +187,8 @@ namespace SOFT564DSUI
                             }
                             else
                             {
-                                break;
+                                //if the command is recognised but not all required bytes arrived then jump 'breakout' to continue with the code
+                                goto breakout;
                             }
                             break;
                         case RequestTypes.RecEnvData:
@@ -199,16 +201,24 @@ namespace SOFT564DSUI
                             }
                             else
                             {
-                                break; 
+                                //if the command is recognised but not all required bytes arrived then jump 'breakout' to continue with the code
+                                goto breakout;
                             }
                             break;
                         default:
                             break;
                     }
 
-                    break;
-                    
+                    /*
+                     * The weakpoint of this approach is that if there is more than 0 bytes in the buffer, the code will be stuck in the loop and won't let the program fetch more bytes.
+                     * The break statements in the switch break out of the switch statement and not the loop.
+                     * if I have a break outside of the switch it will breakout of the loop after one command in queued even though there may be more commands in the queue.
+                     */
+                     
                 }
+
+                //if the command is recognised but not all required bytes arrived then jump to here to continue with the code
+                breakout:
 
                 Console.WriteLine("Connection " + connectionID + " is requesting queue access");
                 MessageHandler.RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter

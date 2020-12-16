@@ -79,8 +79,8 @@ namespace SOFT564DSUI
                         case RequestTypes.RecEnvData:
                         Console.WriteLine("Received env data");
                             EnvData.temperature = BitConverter.ToInt16(request, 1);
-                            EnvData.CheckTempMagnitude();
-                            EnvData.humidity = BitConverter.ToChar(request, 3);
+                            EnvData.TempToFloat();
+                            EnvData.humidity = request[3];
                             EnvData.lIntensity = BitConverter.ToInt16(request, 4);
                         break;
 
