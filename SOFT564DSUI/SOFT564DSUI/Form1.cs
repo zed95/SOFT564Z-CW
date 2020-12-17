@@ -106,7 +106,6 @@ namespace SOFT564DSUI
         {
             String id = listBox1.GetItemText(listBox1.SelectedItem);
             //TCPClient.send(textBox1.Text, id);
-            ConnectionManager.Connections[0].asyncSend(textBox1.Text, id);
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
@@ -151,6 +150,24 @@ namespace SOFT564DSUI
             }
         }
 
+        private void BuggyDisconnectBtn_Click(object sender, EventArgs e)
+        {
 
+        }
+
+        private void buggyConnectBtn_Click(object sender, EventArgs e)
+        {
+            if(listBox1.SelectedIndex == -1)
+            {
+                textBoxBuggyConnectStatus.Text = "Select a client to connect to.";
+            }
+            else
+            {
+                MessageHandler.BuggyConnect(Convert.ToInt32(listBox1.SelectedItem));
+                //ConnectionManager.Connections[0].asyncSend(request);
+
+                //Need to put a mutex around async send in case multiple processes in my application try to send to the buggy/server at the same time
+            }
+        }
     }
 }

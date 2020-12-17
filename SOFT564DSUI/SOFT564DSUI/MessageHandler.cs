@@ -92,14 +92,37 @@ namespace SOFT564DSUI
             }
         }
 
+
+        static public void BuggyConnect(int buggyID)
+        {
+            List<object> request = new List<object>();
+            List<int> dataType = new List<int>();
+
+            request.Add(RequestTypes.BuggyConnect);
+            dataType.Add(VarTypes.typeByte);
+
+            request.Add(buggyID);
+            dataType.Add(VarTypes.typeInt32);
+
+            ConnectionManager.Connections[0].asyncSend(request, dataType, 5);
+
+        }
+
     }
 
     //A class with a list of all possible request types.
     static class RequestTypes
     {
-        public const int ListAddClient    = 1;
-        public const int ListRemoveClient = 2;
-        public const int SendEnvData      = 3;
-        public const int RecEnvData       = 4;
+        public const int  ListAddClient    = 1;
+        public const int  ListRemoveClient = 2;
+        public const int  SendEnvData      = 3;
+        public const int  RecEnvData       = 4;
+        public const byte BuggyConnect = 6;
+    }
+
+    static class VarTypes
+    {
+        public const int typeByte = 1;
+        public const int typeInt32 = 2;
     }
 }

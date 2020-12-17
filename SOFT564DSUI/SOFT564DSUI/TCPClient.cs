@@ -236,13 +236,32 @@ namespace SOFT564DSUI
         }
 
 
-        public void asyncSend(String message, String ID)
+        public void asyncSend(List<object> request, List<int> dataType, int byteCount)
         {
-            //int byteCount = Encoding.ASCII.GetByteCount(ID + message + 1);      //get the number of bytes in the message that I want to send
-            //byte[] sendData = Encoding.ASCII.GetBytes(ID + message);            //convert data in an array of bytes.
-            byte[] sendData = BitConverter.GetBytes((Byte)3);          //convert data in an array of bytes.
+            byte[] buffer = new byte[byteCount];
+            int offset = 0;
+            
+
+            //Convert all datatypes to bytes and put into a byte array in preparation for transmission
+            for(int x = 0; x < request.Count; x++)
+            {
+                switch(dataType[x])
+                {
+                    case VarTypes.typeByte:
+                        Buffer.BlockCopy(BitConverter.GetBytes((byte)request[x]), 0, buffer, offset, 1);
+                        offset += 1;
+                        break;
+                    case VarTypes.typeInt32:
+                        Buffer.BlockCopy(BitConverter.GetBytes((byte)request[x]), 0, buffer, offset, 4);
+                        offset += 4;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            
             Console.WriteLine("Sending");
-            socket.BeginSend(sendData, 0, sendData.Length, SocketFlags.None, SendCallback, socket);     //start the transmission process
+            socket.BeginSend(buffer, 0, buffer.Length, SocketFlags.None, SendCallback, socket);     //start the transmission process
         }
 
         //asynchronous sending callback witht the result of the transmission attempt.
