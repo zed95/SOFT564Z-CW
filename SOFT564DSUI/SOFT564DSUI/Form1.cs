@@ -157,6 +157,7 @@ namespace SOFT564DSUI
 
         private void buggyConnectBtn_Click(object sender, EventArgs e)
         {
+            int index = 0;
             if(listBox1.SelectedIndex == -1)
             {
                 textBoxBuggyConnectStatus.Text = "Select a client to connect to.";
@@ -164,9 +165,26 @@ namespace SOFT564DSUI
             else
             {
                 MessageHandler.BuggyConnect(Convert.ToInt32(listBox1.SelectedItem));
-                //ConnectionManager.Connections[0].asyncSend(request);
+                buggyConnectBtn.Enabled = false;
+                while (BuggyConnectResponse.response == 0) { };     //Wait for the response from the server
 
-                //Need to put a mutex around async send in case multiple processes in my application try to send to the buggy/server at the same time
+                switch (BuggyConnectResponse.response)
+                {
+                    case BuggyConnectResponse.ConnectPermitted:
+                        index = clientManager.Clients.FindIndex(x => x.clientID == Convert.ToInt32(listBox1.SelectedItem));
+                        ConnectionManager.AddClient(clientManager.Clients[index].ipAddress, 80);
+                        textBoxBuggyConnectStatus.Text = "Connected to buggy";
+                        break;
+                    case BuggyConnectResponse.BuggyInUse:
+                        textBoxBuggyConnectStatus.Text = "Buggy is used by another client";
+                        buggyConnectBtn.Enabled = true;
+                        break;
+                    default:
+
+                        break;
+                }
+
+                BuggyConnectResponse.response = 0;  //Reset The response
             }
         }
     }

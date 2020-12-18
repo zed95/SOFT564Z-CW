@@ -164,11 +164,11 @@ namespace SOFT564DSUI
                     switch (unqueuedBytesBuffer[0])     //if the data sent does not match any request types the while loop freezes as nothing is currently done with that byte. Need to fix that.----------mkhn
                     {
                         case RequestTypes.ListAddClient:
-                            if (bytesLeft >= 18)
+                            if (bytesLeft >= 17)
                             {
-                                tempQueue.Enqueue(ExtractRequest(unqueuedBytesBuffer, 18));
-                                bytesLeft -= 18;
-                                Buffer.BlockCopy(unqueuedBytesBuffer, 18, unqueuedBytesBuffer, 0, bytesLeft);
+                                tempQueue.Enqueue(ExtractRequest(unqueuedBytesBuffer, 17));
+                                bytesLeft -= 17;
+                                Buffer.BlockCopy(unqueuedBytesBuffer, 17, unqueuedBytesBuffer, 0, bytesLeft);
                                 Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
                             }
                             else
@@ -178,11 +178,11 @@ namespace SOFT564DSUI
                             }
                             break;
                         case RequestTypes.ListRemoveClient:
-                            if (bytesLeft >= 6)
+                            if (bytesLeft >= 5)
                             {
-                                tempQueue.Enqueue(ExtractRequest(unqueuedBytesBuffer, 6));
-                                bytesLeft -= 6;
-                                Buffer.BlockCopy(unqueuedBytesBuffer, 6, unqueuedBytesBuffer, 0, bytesLeft);
+                                tempQueue.Enqueue(ExtractRequest(unqueuedBytesBuffer, 5));
+                                bytesLeft -= 5;
+                                Buffer.BlockCopy(unqueuedBytesBuffer, 5, unqueuedBytesBuffer, 0, bytesLeft);
                                 Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
                             }
                             else
@@ -197,6 +197,20 @@ namespace SOFT564DSUI
                                 tempQueue.Enqueue(ExtractRequest(unqueuedBytesBuffer, 6));
                                 bytesLeft -= 6;
                                 Buffer.BlockCopy(unqueuedBytesBuffer, 6, unqueuedBytesBuffer, 0, bytesLeft);
+                                Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
+                            }
+                            else
+                            {
+                                //if the command is recognised but not all required bytes arrived then jump 'breakout' to continue with the code
+                                goto breakout;
+                            }
+                            break;
+                        case RequestTypes.BuggyConnectResponse:
+                            if (bytesLeft >= 2)
+                            {
+                                tempQueue.Enqueue(ExtractRequest(unqueuedBytesBuffer, 2));
+                                bytesLeft -= 2;
+                                Buffer.BlockCopy(unqueuedBytesBuffer, 2, unqueuedBytesBuffer, 0, bytesLeft);
                                 Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
                             }
                             else
@@ -236,30 +250,8 @@ namespace SOFT564DSUI
         }
 
 
-        public void asyncSend(List<object> request, List<int> dataType, int byteCount)
-        {
-            byte[] buffer = new byte[byteCount];
-            int offset = 0;
-            
-
-            //Convert all datatypes to bytes and put into a byte array in preparation for transmission
-            for(int x = 0; x < request.Count; x++)
-            {
-                switch(dataType[x])
-                {
-                    case VarTypes.typeByte:
-                        Buffer.BlockCopy(BitConverter.GetBytes((byte)request[x]), 0, buffer, offset, 1);
-                        offset += 1;
-                        break;
-                    case VarTypes.typeInt32:
-                        Buffer.BlockCopy(BitConverter.GetBytes((byte)request[x]), 0, buffer, offset, 4);
-                        offset += 4;
-                        break;
-                    default:
-                        break;
-                }
-            }
-            
+        public void asyncSend(byte[] buffer)
+        {   
             Console.WriteLine("Sending");
             socket.BeginSend(buffer, 0, buffer.Length, SocketFlags.None, SendCallback, socket);     //start the transmission process
         }

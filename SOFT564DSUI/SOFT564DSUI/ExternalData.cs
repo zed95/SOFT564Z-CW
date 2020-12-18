@@ -81,4 +81,11 @@ namespace SOFT564DSUI
 
         }
     }
+
+    static class BuggyConnectResponse
+    {
+        public static byte response = 0;
+        public const byte ConnectPermitted = 1;
+        public const byte BuggyInUse = 2;
+    }
 }

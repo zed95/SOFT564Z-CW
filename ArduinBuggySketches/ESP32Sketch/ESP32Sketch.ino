@@ -10,7 +10,7 @@ void setup() {
   SetupI2C();                   //initialise i2c for bme280
   SetupBME280();
   SetupWiFi();
-  //ConnectToServer();
+  ConnectToServer();
   SetupListener();
 }
 

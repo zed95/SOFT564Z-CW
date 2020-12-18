@@ -59,6 +59,7 @@ void SetupListener() {
   while (1) {
     controllerClient = listener.available();
     if (controllerClient) {
+      Serial.println("Controller Client Connected!");
       break;
     }
   }

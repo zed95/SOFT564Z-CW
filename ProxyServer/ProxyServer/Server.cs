@@ -76,18 +76,72 @@ namespace ProxyServer
         {
             Byte[] ClientInfo;
             Byte[] NewClientUpdateInfo;
+            String StrIPAddr;
+            IPEndPoint endPoint;
+            String StrIPAddr1;
+            IPEndPoint endPoint1;
 
-            ClientInfo = TransmissionConverter(requestType, client);  //Conver client data to send to all other clients.
+            List<object> request = new List<object>();
+            List<int> dataTypes = new List<int>();
+            List<object> request1 = new List<object>();
+            List<int> dataTypes1 = new List<int>();
+
+           // ClientInfo = TransmissionConverter(requestType, client);  //Conver client data to send to all other clients.
+            request.Add(requestType);
+            dataTypes.Add(VarTypes.typeByte);
+
+            endPoint = (IPEndPoint)client.clientSocket.RemoteEndPoint;
+            IPAddress addr = endPoint.Address;
+            StrIPAddr = addr.ToString();
+            request.Add(IPtoLong(StrIPAddr));
+            dataTypes.Add(VarTypes.typeLong);
+
+            request.Add(endPoint.Port);
+            dataTypes.Add(VarTypes.typeInt32);
+
+            request.Add(client.clientID);
+            dataTypes.Add(VarTypes.typeInt32);
+
+            ClientInfo = RequestHandler.byteConverter(request, dataTypes, 17);
+
             foreach (Client clients in clientManager.Clients)
             {
                 try
                 {
                     if (client.clientID != clients.clientID)
                     {
+                        //need to add code to take into account removal requests too.
+
+
+
+
+
+
+
+
                         if (requestType == 1)
                         {
+                            request1.Add(requestType);
+                            dataTypes1.Add(VarTypes.typeByte);
+
+                            endPoint1 = (IPEndPoint)clients.clientSocket.RemoteEndPoint;
+                            IPAddress addr1 = endPoint1.Address;
+                            StrIPAddr1 = addr1.ToString();
+                            request1.Add(IPtoLong(StrIPAddr1));
+                            dataTypes1.Add(VarTypes.typeLong);
+
+                            request1.Add(endPoint1.Port);
+                            dataTypes1.Add(VarTypes.typeInt32);
+
+                            request1.Add(clients.clientID);
+                            dataTypes1.Add(VarTypes.typeInt32);
+
+                            NewClientUpdateInfo = RequestHandler.byteConverter(request1, dataTypes1, 17);
+                            request1.Clear();
+                            dataTypes1.Clear();
+
                             //send data of all clients (apart from the data of the actual client itself) to the newly connected client.
-                            NewClientUpdateInfo = TransmissionConverter(requestType, clients);
+                            //NewClientUpdateInfo = TransmissionConverter(requestType, clients);
                             client.clientSocket.BeginSend(NewClientUpdateInfo, 0, NewClientUpdateInfo.Length, SocketFlags.None, client.SendCallback, client.clientSocket);
                         }
                         clients.clientSocket.BeginSend(ClientInfo, 0, ClientInfo.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other clients
@@ -221,12 +275,14 @@ namespace ProxyServer
         public int clientID;
         public byte[] callbackBuffer;
         private Byte[] unqueuedBytesBuffer = new byte[0];
+        public bool inUse;
 
         public Client(Socket socket, int id)
         {
             clientSocket = socket;
             clientID = id;
             callbackBuffer = new byte[1024];
+            inUse = false;
 
             clientReceive();
         }
@@ -264,10 +320,10 @@ namespace ProxyServer
                         switch (unqueuedBytesBuffer[0])
                         {
                             case RequestTypes.ListAddClient:
-                                if (bytesLeft >= 18)
+                                if (bytesLeft >= 17)
                                 {
-                                    tempQueue.Enqueue(ExtractRequest(unqueuedBytesBuffer, 18));
-                                    bytesLeft -= 18;
+                                    tempQueue.Enqueue(ExtractRequest(unqueuedBytesBuffer, 17));
+                                    bytesLeft -= 17;
                                     Buffer.BlockCopy(unqueuedBytesBuffer, 18, unqueuedBytesBuffer, 0, bytesLeft);
                                     Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
                                 }
@@ -278,16 +334,32 @@ namespace ProxyServer
                                 }
                                 break;
                             case RequestTypes.ListRemoveClient:
-                                if (bytesLeft >= 6)
+                                if (bytesLeft >= 5)
                                 {
-                                    tempQueue.Enqueue(ExtractRequest(unqueuedBytesBuffer, 6));
-                                    bytesLeft -= 6;
-                                    Buffer.BlockCopy(unqueuedBytesBuffer, 6, unqueuedBytesBuffer, 0, bytesLeft);
+                                    tempQueue.Enqueue(ExtractRequest(unqueuedBytesBuffer, 5));
+                                    bytesLeft -= 5;
+                                    Buffer.BlockCopy(unqueuedBytesBuffer, 5, unqueuedBytesBuffer, 0, bytesLeft);
                                     Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
                                 }
                                 else
                                 {
                                     //if the command is recognised but not all required bytes arrived then jump 'breakout' to continue with the code
+                                    goto breakout;
+                                }
+                                break;
+                            case RequestTypes.BuggyConnect:
+                                if(bytesLeft >= 5)
+                                {
+                                    byte[] byteBuff = new byte[9];
+                                    Buffer.BlockCopy(ExtractRequest(unqueuedBytesBuffer, 5), 0, byteBuff, 0, 5);
+                                    Buffer.BlockCopy(BitConverter.GetBytes(clientID), 0, byteBuff, 5, 4);           //Also pass the client id that sent the request
+                                    tempQueue.Enqueue(byteBuff);
+                                    bytesLeft -= 5;
+                                    Buffer.BlockCopy(unqueuedBytesBuffer, 5, unqueuedBytesBuffer, 0, bytesLeft);
+                                    Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
+                                }
+                                else
+                                {
                                     goto breakout;
                                 }
                                 break;
@@ -318,23 +390,10 @@ namespace ProxyServer
             }
         }
 
-        public void clientSend(Socket clientSocket, String Message)
+        public void clientSend(byte[] buffer)
         {
-            byte[] msgByte;
-            int msgLen;
 
-            //Adapt this function to send data to a speciffied client.
-            msgLen = Encoding.ASCII.GetByteCount(Message + 1);
-            msgByte = Encoding.ASCII.GetBytes(Message);
-            //clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, SendCallback, clientManager.Clients[1].clientSocket);
-            if (msgByte[0] == '0')
-            {
-                clientManager.Clients[0].clientSocket.BeginSend(msgByte, 0, msgByte.Length, SocketFlags.None, SendCallback, clientSocket); //send data to the other client
-            }
-            else
-            {
-                Console.WriteLine("It's not 0");
-            }
+            clientSocket.BeginSend(buffer, 0, buffer.Length, SocketFlags.None, SendCallback, clientSocket); //send data to the other client
 
         }
 
