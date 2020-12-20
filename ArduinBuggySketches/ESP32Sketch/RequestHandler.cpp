@@ -1,6 +1,7 @@
 #include "RequestHandler.h"
 #include "Sensors.h"
 #include "myWiFi.h"
+#include "CommProtocols.h"
 
 TaskHandle_t  Task1;
 SemaphoreHandle_t requestQueueMutex;
@@ -70,6 +71,21 @@ void HandleRequest(void *parameter) {
            SendEnvData();
            xSemaphoreGive(requestQueueMutex);
           break;
+        case MOVE_BUGGY:
+          if (bytesInQueue < 1) {
+            xSemaphoreGive(requestQueueMutex);                      //Give up mutex to allow more data to be added to queue
+            while (bytesInQueue < 1) {}
+            xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
+            RemoveQueue(&requestArray[1], 1);
+            xSemaphoreGive(requestQueueMutex);
+            MoveBuggy(&requestArray[0]);
+          }
+          else {
+            RemoveQueue(&requestArray[1], 1);
+            xSemaphoreGive(requestQueueMutex);
+            MoveBuggy(&requestArray[0]);
+          }
+          break;
         default:
           xSemaphoreGive(requestQueueMutex);
           break;
@@ -135,4 +151,8 @@ void SendEnvData() {
   Serial.println(envData[5]);
   SendWiFi(controllerClient, &envData[0], sizeof(envData));
   
+}
+
+void MoveBuggy(byte *byteArray) {
+  SendSerial(byteArray, 2,  SERIAL2);
 }

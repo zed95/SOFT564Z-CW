@@ -9,15 +9,18 @@ void SetupSerial(int baudRate) {
 
 
 //I need to decide which format the message is going to be sent in.
-void SendSerial(int message, int serial) {
+void SendSerial(byte *byteArray, int byteCount, int serial) {
 
-    if(serial == 0) {
-      //send via serial 0
+    if(serial == SERIAL1) {
+      for(int x = 0; x < byteCount; x++) {
+        Serial.write(*(byteArray + x));
+      }
     }
     else {
-      //send via serial 1
+      for(int x = 0; x < byteCount; x++) {
+        Serial2.write(*(byteArray + x));
+      }
     }
-  
 }
 
 void SetupI2C() {

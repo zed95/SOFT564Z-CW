@@ -74,7 +74,9 @@ namespace SOFT564DSUI
 
                             clientManager.RemoveClient();
                             removeClient = true;
-
+                            break;
+                        case RequestTypes.SendEnvData:
+                            ConnectionManager.Connections[1].asyncSend(request);
                             break;
                         case RequestTypes.RecEnvData:
                         Console.WriteLine("Received env data");
@@ -88,6 +90,9 @@ namespace SOFT564DSUI
                             break;
                         case RequestTypes.BuggyConnectResponse:
                             BuggyConnectResponse.response = request[1];
+                            break;
+                        case RequestTypes.MoveBuggy:
+                            ConnectionManager.Connections[1].asyncSend(request);
                             break;
                         default:
 
@@ -115,6 +120,83 @@ namespace SOFT564DSUI
             RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
             MessageHandler.RequestQueue.Enqueue(requestByteArray);
             RequestQueueMutex.ReleaseMutex();            //Release the mutex
+        }
+
+        static public void SendEnvData()
+        {
+            List<object> request = new List<object>();
+            List<int> dataType = new List<int>();
+            byte[] requestByteArray = new byte[1];
+
+            request.Add(RequestTypes.SendEnvData);
+            dataType.Add(VarTypes.typeByte);
+
+            requestByteArray = byteConverter(request, dataType, 1);
+
+            RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
+            MessageHandler.RequestQueue.Enqueue(requestByteArray);
+            RequestQueueMutex.ReleaseMutex();            //Release the mutex
+        }
+
+
+        static public void MotorControl()
+        {
+            //Make copies of the current states 
+            byte forwardL = 0;
+            byte reverseL = 0;
+            byte rightL = 0;
+            byte leftL = 0;
+            byte direction;
+            List<object> request = new List<object>();
+            List<int> dataType = new List<int>();
+            byte[] requestByteArray = new byte[1];
+
+            while (BuggyMotorControl.pauseMotorControl) { };
+            
+            if (BuggyMotorControl.forward) { forwardL = 1; }
+            if (BuggyMotorControl.reverse) { reverseL = 1; }
+            if (BuggyMotorControl.right) { leftL = 1; }
+            if (BuggyMotorControl.left) { rightL = 1; }
+
+            direction = (byte)((leftL << 3) | (rightL << 2) | (reverseL << 1) | (forwardL << 0));
+
+
+
+            // 1111 = left, right, reverse, forward
+
+            //0000      no motion
+            //0001      forward
+            //0010      reverse
+            //0011      reverse & forward = no motion
+            //0100      right = rotate clockwise
+            //0101      forward and right = turn right
+            //0110      reverse and right = reverse right
+            //0111      forward, reverse and right = rotate clockwise
+            //1000      left = rotate anti-clockwise
+            //1001      forward and left = turn left;
+            //1010      reverse and left = reverse left;
+            //1011      forward, reverse and left = rotate anti-clockwise
+            //1100      left and right = no motion
+            //1101      left right and forward = forward
+            //1110      left, right, reverse = reverse
+            //1111      no motion
+            if (BuggyMotorControl.previousState != direction)
+            {
+                request.Add(RequestTypes.MoveBuggy);
+                dataType.Add(VarTypes.typeByte);
+
+                request.Add(direction);
+                dataType.Add(VarTypes.typeByte);
+
+                requestByteArray = byteConverter(request, dataType, 2);
+
+                RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
+                MessageHandler.RequestQueue.Enqueue(requestByteArray);
+                RequestQueueMutex.ReleaseMutex();            //Release the mutex
+
+            }
+
+            BuggyMotorControl.previousState = direction;
         }
 
         static public byte[] byteConverter(List<object> request, List<int> dataTypes, int byteCount)
@@ -152,6 +234,7 @@ namespace SOFT564DSUI
         public const byte  ListRemoveClient     = 2;
         public const byte  SendEnvData          = 3;
         public const byte  RecEnvData           = 4;
+        public const byte  MoveBuggy            = 5;
         public const byte  BuggyConnect         = 6;
         public const byte  BuggyConnectResponse = 7;
 
@@ -161,5 +244,32 @@ namespace SOFT564DSUI
     {
         public const int typeByte = 1;
         public const int typeInt32 = 2;
+    }
+
+    static class BuggyMotorControl
+    {
+        public static bool forward = false;
+        public static bool reverse = false;
+        public static bool right = false;
+        public static bool left = false;
+        public static byte previousState = 0;
+        static Thread MotorControlInput = new Thread(MessageHandler.MotorControl);
+        public volatile static bool pauseMotorControl = true;
+
+        static public void StartMotorControl()
+        {
+            MotorControlInput.Start();
+        }
+        
+        static public void PauseMotorControl()
+        {
+            pauseMotorControl = true;
+        }
+
+        static public void RestartMotorControl()
+        {
+            pauseMotorControl = false;
+        }
+
     }
 }

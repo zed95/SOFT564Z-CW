@@ -4,6 +4,9 @@
 //Values
 #define BAUD_9600       9600
 #define BUAD_115200     115200
+#define SERIAL1         1
+#define SERIAL2         2
+
 
 //Pins
 #define ESP32_UART2_RX  16
@@ -12,3 +15,4 @@
 //functions
 void SetupSerial(int buadRate);
 void SetupI2C();
+void SendSerial(byte *byteArray, int byteCount, int serial);

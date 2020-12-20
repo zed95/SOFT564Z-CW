@@ -312,6 +312,7 @@
             this.comboBoxIntMode.Name = "comboBoxIntMode";
             this.comboBoxIntMode.Size = new System.Drawing.Size(153, 21);
             this.comboBoxIntMode.TabIndex = 29;
+            this.comboBoxIntMode.SelectedIndexChanged += new System.EventHandler(this.comboBoxIntMode_SelectedIndexChanged);
             // 
             // label10
             // 
@@ -330,6 +331,7 @@
             this.buttonForward.TabIndex = 31;
             this.buttonForward.Text = "Forward";
             this.buttonForward.UseVisualStyleBackColor = true;
+            this.buttonForward.Click += new System.EventHandler(this.buttonForward_Click);
             // 
             // buttonLeft
             // 
@@ -339,6 +341,7 @@
             this.buttonLeft.TabIndex = 32;
             this.buttonLeft.Text = "Left";
             this.buttonLeft.UseVisualStyleBackColor = true;
+            this.buttonLeft.Click += new System.EventHandler(this.buttonLeft_Click);
             // 
             // buttonRight
             // 
@@ -348,6 +351,7 @@
             this.buttonRight.TabIndex = 33;
             this.buttonRight.Text = "Right";
             this.buttonRight.UseVisualStyleBackColor = true;
+            this.buttonRight.Click += new System.EventHandler(this.buttonRight_Click);
             // 
             // buttonReverse
             // 
@@ -357,6 +361,7 @@
             this.buttonReverse.TabIndex = 34;
             this.buttonReverse.Text = "Reverse";
             this.buttonReverse.UseVisualStyleBackColor = true;
+            this.buttonReverse.Click += new System.EventHandler(this.buttonReverse_Click);
             // 
             // buttonReqData
             // 
@@ -366,6 +371,7 @@
             this.buttonReqData.TabIndex = 35;
             this.buttonReqData.Text = "Request Data";
             this.buttonReqData.UseVisualStyleBackColor = true;
+            this.buttonReqData.Click += new System.EventHandler(this.buttonReqData_Click);
             // 
             // comboBoxConfig
             // 
@@ -541,6 +547,7 @@
             this.Text = "Client GUI SOFT564Z";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Form1_KeyDown);
+            this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.Form1_KeyUp);
             this.ResumeLayout(false);
             this.PerformLayout();
 

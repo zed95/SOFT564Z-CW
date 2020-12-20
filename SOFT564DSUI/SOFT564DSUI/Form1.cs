@@ -22,10 +22,36 @@ namespace SOFT564DSUI
         public ClientGUI()
         {
             InitializeComponent();
+            buggyConnectBtn.Enabled = false;
+            buggyDisconnectBtn.Enabled = false;
+            textBoxBuggyConnectStatus.Enabled = false;
+            comboBoxIntMode.Enabled = false;
+            comboBoxConfig.Enabled = false;
+            buttonForward.Enabled = false;
+            buttonReverse.Enabled = false;
+            buttonRight.Enabled = false;
+            buttonLeft.Enabled = false;
+            textBoxConfigStatus.Enabled = false;
+            textBoxCurrConfig.Enabled = false;
+            textBoxConfigStatus.Enabled = false;
+            buttonConfigUpdate.Enabled = false;
+            textBoxNewConfig.Enabled = false;
+            TempTextBox.Enabled = false;
+            HumTextBox.Enabled = false;
+            LIntTextBox.Enabled = false;
+            buttonReqData.Enabled = false;
+
+            comboBoxIntMode.Items.Add("Manual");
+            comboBoxIntMode.Items.Add("Autonomous");
+            comboBoxIntMode.Items.Add("Configuration");
+
+
+            BuggyMotorControl.StartMotorControl();      //Start thread that will monitor motor control inputs if manual mode is on.
+
             //stream.Close();
             //client.Close();
             //Console.ReadKey();
-            
+
         }
 
         public void callDisplay()
@@ -114,6 +140,53 @@ namespace SOFT564DSUI
             {
                 SendButton.PerformClick();
             }
+            if (!BuggyMotorControl.pauseMotorControl)
+            {
+                if (e.KeyCode == Keys.Up)
+                {
+                    BuggyMotorControl.forward = true;
+                }
+                if (e.KeyCode == Keys.Down)
+                {
+                    BuggyMotorControl.reverse = true;
+                }
+                if (e.KeyCode == Keys.Right)
+                {
+                    BuggyMotorControl.right = true;
+                }
+                if (e.KeyCode == Keys.Left)
+                {
+                    BuggyMotorControl.left = true;
+                }
+            }
+        }
+
+        private void Form1_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                SendButton.PerformClick();
+            }
+            if (!BuggyMotorControl.pauseMotorControl)
+            {
+                if (e.KeyCode == Keys.Up)
+                {
+                    BuggyMotorControl.forward = false;
+                }
+                if (e.KeyCode == Keys.Down)
+                {
+                    BuggyMotorControl.reverse = false;
+                }
+                if (e.KeyCode == Keys.Right)
+                {
+                    BuggyMotorControl.right = false;
+                }
+                if (e.KeyCode == Keys.Left)
+                {
+                    BuggyMotorControl.left = false;
+                }
+            }
+
         }
 
         private void connectToServerBtn_Click(object sender, EventArgs e)
@@ -131,6 +204,11 @@ namespace SOFT564DSUI
             {
                 connectToServerBtn.Enabled = false;
                 statusTB.Text = "Connected";
+
+                //enable appropriate gui units
+                buggyConnectBtn.Enabled = true;
+                textBoxBuggyConnectStatus.Enabled = true;
+
                 grabData = new Thread(callDisplay);
                 grabData.Start();
             }
@@ -174,6 +252,8 @@ namespace SOFT564DSUI
                         index = clientManager.Clients.FindIndex(x => x.clientID == Convert.ToInt32(listBox1.SelectedItem));
                         ConnectionManager.AddClient(clientManager.Clients[index].ipAddress, 80);
                         textBoxBuggyConnectStatus.Text = "Connected to buggy";
+                        comboBoxIntMode.Enabled = true;
+                        buggyConnectBtn.Enabled = false;
                         break;
                     case BuggyConnectResponse.BuggyInUse:
                         textBoxBuggyConnectStatus.Text = "Buggy is used by another client";
@@ -186,6 +266,102 @@ namespace SOFT564DSUI
 
                 BuggyConnectResponse.response = 0;  //Reset The response
             }
+        }
+
+        private void comboBoxIntMode_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            switch(comboBoxIntMode.SelectedItem.ToString())
+            {
+                case "Manual":
+                    buttonForward.Enabled = true;
+                    buttonReverse.Enabled = true;
+                    buttonRight.Enabled = true;
+                    buttonLeft.Enabled = true;
+                    TempTextBox.Enabled = true;
+                    HumTextBox.Enabled = true;
+                    LIntTextBox.Enabled = true;
+                    buttonReqData.Enabled = true;
+                    comboBoxConfig.Enabled = false;
+                    textBoxCurrConfig.Enabled = false;
+                    textBoxConfigStatus.Enabled = false;
+                    buttonConfigUpdate.Enabled = false;
+                    textBoxNewConfig.Enabled = false;
+                    BuggyMotorControl.RestartMotorControl();
+                    break;
+                case "Autonomous":
+                    TempTextBox.Enabled = true;
+                    HumTextBox.Enabled = true;
+                    LIntTextBox.Enabled = true;
+                    comboBoxConfig.Enabled = false;
+                    buttonForward.Enabled = false;
+                    buttonReverse.Enabled = false;
+                    buttonRight.Enabled = false;
+                    buttonLeft.Enabled = false;
+                    textBoxCurrConfig.Enabled = false;
+                    textBoxConfigStatus.Enabled = false;
+                    buttonConfigUpdate.Enabled = false;
+                    textBoxNewConfig.Enabled = false;
+                    buttonReqData.Enabled = false;
+                    BuggyMotorControl.PauseMotorControl();
+                    break;
+                case "Configuration":
+                    comboBoxConfig.Enabled = true;
+                    buttonForward.Enabled = false;
+                    buttonReverse.Enabled = false;
+                    buttonRight.Enabled = false;
+                    buttonLeft.Enabled = false;
+                    textBoxCurrConfig.Enabled = true;
+                    textBoxConfigStatus.Enabled = true;
+                    buttonConfigUpdate.Enabled = true;
+                    textBoxNewConfig.Enabled = true;
+                    TempTextBox.Enabled = false;
+                    HumTextBox.Enabled = false;
+                    LIntTextBox.Enabled = false;
+                    buttonReqData.Enabled = false;
+                    BuggyMotorControl.PauseMotorControl();
+                    break;
+                default:
+                    comboBoxConfig.Enabled = false;
+                    buttonForward.Enabled = false;
+                    buttonReverse.Enabled = false;
+                    buttonRight.Enabled = false;
+                    buttonLeft.Enabled = false;
+                    textBoxConfigStatus.Enabled = false;
+                    textBoxCurrConfig.Enabled = false;
+                    buttonConfigUpdate.Enabled = false;
+                    textBoxNewConfig.Enabled = false;
+                    TempTextBox.Enabled = false;
+                    HumTextBox.Enabled = false;
+                    LIntTextBox.Enabled = false;
+                    buttonReqData.Enabled = false;
+                    BuggyMotorControl.PauseMotorControl();
+                    break;
+            }
+        }
+
+        private void buttonReqData_Click(object sender, EventArgs e)
+        {
+            MessageHandler.SendEnvData();
+        }
+
+        private void buttonForward_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void buttonReverse_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void buttonRight_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void buttonLeft_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

@@ -8,7 +8,7 @@
 WiFiServer listener(80);            //Create a listener on port n.
 WiFiClient serverClient;            //create instance of a client that will connect to the server so that the buggy can be seen by controller clients in the system.
 WiFiClient controllerClient;        //instance that will connect with the controller client that has been granted permission to control the buggy.
-const char* serverIP = "192.168.0.155";
+const char* serverIP = "192.168.0.95";
 const int serverPort = 11000;
 
 void SetupWiFi() {
@@ -18,9 +18,13 @@ void SetupWiFi() {
   //  const char* ssid = "VM210ED8";
   //  const char* password = "ysZgas5curvr";
 
-  //46 Wilson
-  const char* ssid = "VM5625627";
-  const char* password = "9shxfpSCjwmb";
+//  //46 Wilson
+//  const char* ssid = "VM5625627";
+//  const char* password = "9shxfpSCjwmb";
+
+  //103 Kendal
+  const char* ssid = "OriginBroadband16477";
+  const char* password = "Cv7k09mp!";
 
   //const char* ssid = "zHotspot";
   // const char* password = "Cv7k09mp!";
