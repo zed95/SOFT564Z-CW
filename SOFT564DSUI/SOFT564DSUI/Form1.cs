@@ -46,7 +46,7 @@ namespace SOFT564DSUI
             comboBoxIntMode.Items.Add("Configuration");
 
 
-            BuggyMotorControl.StartMotorControl();      //Start thread that will monitor motor control inputs if manual mode is on.
+            
 
             //stream.Close();
             //client.Close();
@@ -142,19 +142,19 @@ namespace SOFT564DSUI
             }
             if (!BuggyMotorControl.pauseMotorControl)
             {
-                if (e.KeyCode == Keys.Up)
+                if (e.KeyCode == Keys.W)
                 {
                     BuggyMotorControl.forward = true;
                 }
-                if (e.KeyCode == Keys.Down)
+                if (e.KeyCode == Keys.S)
                 {
                     BuggyMotorControl.reverse = true;
                 }
-                if (e.KeyCode == Keys.Right)
+                if (e.KeyCode == Keys.D)
                 {
                     BuggyMotorControl.right = true;
                 }
-                if (e.KeyCode == Keys.Left)
+                if (e.KeyCode == Keys.A)
                 {
                     BuggyMotorControl.left = true;
                 }
@@ -169,19 +169,19 @@ namespace SOFT564DSUI
             }
             if (!BuggyMotorControl.pauseMotorControl)
             {
-                if (e.KeyCode == Keys.Up)
+                if (e.KeyCode == Keys.W)
                 {
                     BuggyMotorControl.forward = false;
                 }
-                if (e.KeyCode == Keys.Down)
+                if (e.KeyCode == Keys.S)
                 {
                     BuggyMotorControl.reverse = false;
                 }
-                if (e.KeyCode == Keys.Right)
+                if (e.KeyCode == Keys.D)
                 {
                     BuggyMotorControl.right = false;
                 }
-                if (e.KeyCode == Keys.Left)
+                if (e.KeyCode == Keys.A)
                 {
                     BuggyMotorControl.left = false;
                 }
@@ -254,6 +254,7 @@ namespace SOFT564DSUI
                         textBoxBuggyConnectStatus.Text = "Connected to buggy";
                         comboBoxIntMode.Enabled = true;
                         buggyConnectBtn.Enabled = false;
+                        BuggyMotorControl.StartMotorControl();      //Start thread that will monitor motor control inputs if manual mode is on.
                         break;
                     case BuggyConnectResponse.BuggyInUse:
                         textBoxBuggyConnectStatus.Text = "Buggy is used by another client";

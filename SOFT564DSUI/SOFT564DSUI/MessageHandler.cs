@@ -151,52 +151,57 @@ namespace SOFT564DSUI
             List<int> dataType = new List<int>();
             byte[] requestByteArray = new byte[1];
 
-            while (BuggyMotorControl.pauseMotorControl) { };
-            
-            if (BuggyMotorControl.forward) { forwardL = 1; }
-            if (BuggyMotorControl.reverse) { reverseL = 1; }
-            if (BuggyMotorControl.right) { leftL = 1; }
-            if (BuggyMotorControl.left) { rightL = 1; }
-
-            direction = (byte)((leftL << 3) | (rightL << 2) | (reverseL << 1) | (forwardL << 0));
-
-
-
-            // 1111 = left, right, reverse, forward
-
-            //0000      no motion
-            //0001      forward
-            //0010      reverse
-            //0011      reverse & forward = no motion
-            //0100      right = rotate clockwise
-            //0101      forward and right = turn right
-            //0110      reverse and right = reverse right
-            //0111      forward, reverse and right = rotate clockwise
-            //1000      left = rotate anti-clockwise
-            //1001      forward and left = turn left;
-            //1010      reverse and left = reverse left;
-            //1011      forward, reverse and left = rotate anti-clockwise
-            //1100      left and right = no motion
-            //1101      left right and forward = forward
-            //1110      left, right, reverse = reverse
-            //1111      no motion
-            if (BuggyMotorControl.previousState != direction)
+            while (true)
             {
-                request.Add(RequestTypes.MoveBuggy);
-                dataType.Add(VarTypes.typeByte);
+                while (BuggyMotorControl.pauseMotorControl) { };
 
-                request.Add(direction);
-                dataType.Add(VarTypes.typeByte);
+                if (BuggyMotorControl.forward) { forwardL = 1; } else { forwardL = 0; }
+                if (BuggyMotorControl.reverse) { reverseL = 1; } else { reverseL = 0; }
+                if (BuggyMotorControl.right) { rightL = 1; } else { rightL = 0; }
+                if (BuggyMotorControl.left) { leftL = 1; } else { leftL = 0; }
 
-                requestByteArray = byteConverter(request, dataType, 2);
+                direction = (byte)((leftL << 3) | (rightL << 2) | (reverseL << 1) | (forwardL << 0));
 
-                RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
-                MessageHandler.RequestQueue.Enqueue(requestByteArray);
-                RequestQueueMutex.ReleaseMutex();            //Release the mutex
 
+
+                // 1111 = left, right, reverse, forward
+
+                //0000      no motion
+                //0001      forward
+                //0010      reverse
+                //0011      reverse & forward = no motion
+                //0100      right = rotate clockwise
+                //0101      forward and right = turn right
+                //0110      reverse and right = reverse right
+                //0111      forward, reverse and right = rotate clockwise
+                //1000      left = rotate anti-clockwise
+                //1001      forward and left = turn left;
+                //1010      reverse and left = reverse left;
+                //1011      forward, reverse and left = rotate anti-clockwise
+                //1100      left and right = no motion
+                //1101      left right and forward = forward
+                //1110      left, right, reverse = reverse
+                //1111      no motion
+                if (BuggyMotorControl.previousState != direction)
+                {
+                    request.Add(RequestTypes.MoveBuggy);
+                    dataType.Add(VarTypes.typeByte);
+
+                    request.Add(direction);
+                    dataType.Add(VarTypes.typeByte);
+
+                    requestByteArray = byteConverter(request, dataType, 2);
+
+                    RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
+                    MessageHandler.RequestQueue.Enqueue(requestByteArray);
+                    RequestQueueMutex.ReleaseMutex();            //Release the mutex
+
+                    request.Clear();
+                    dataType.Clear();
+                }
+
+                BuggyMotorControl.previousState = direction;
             }
-
-            BuggyMotorControl.previousState = direction;
         }
 
         static public byte[] byteConverter(List<object> request, List<int> dataTypes, int byteCount)

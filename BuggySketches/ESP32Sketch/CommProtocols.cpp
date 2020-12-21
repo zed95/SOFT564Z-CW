@@ -10,7 +10,7 @@ void SetupSerial(int baudRate) {
 
 //I need to decide which format the message is going to be sent in.
 void SendSerial(byte *byteArray, int byteCount, int serial) {
-
+    Serial.println("Sending Via Serial");
     if(serial == SERIAL1) {
       for(int x = 0; x < byteCount; x++) {
         Serial.write(*(byteArray + x));
@@ -25,8 +25,4 @@ void SendSerial(byte *byteArray, int byteCount, int serial) {
 
 void SetupI2C() {
   Wire.begin(); //setup ESP32 as i2c master.
-}
-
-void serialEvent() {
-  
 }

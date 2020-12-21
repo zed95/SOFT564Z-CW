@@ -93,7 +93,7 @@
             this.ipAddressTB.Name = "ipAddressTB";
             this.ipAddressTB.Size = new System.Drawing.Size(212, 20);
             this.ipAddressTB.TabIndex = 4;
-            this.ipAddressTB.Text = "192.168.0.54";
+            this.ipAddressTB.Text = "192.168.0.95";
             // 
             // portTB
             // 
@@ -101,7 +101,7 @@
             this.portTB.Name = "portTB";
             this.portTB.Size = new System.Drawing.Size(71, 20);
             this.portTB.TabIndex = 5;
-            this.portTB.Text = "80";
+            this.portTB.Text = "11000";
             this.portTB.TextChanged += new System.EventHandler(this.portTB_TextChanged);
             // 
             // ipAddressLb
@@ -284,6 +284,7 @@
             // 
             this.textBoxBuggyConnectStatus.Location = new System.Drawing.Point(174, 133);
             this.textBoxBuggyConnectStatus.Name = "textBoxBuggyConnectStatus";
+            this.textBoxBuggyConnectStatus.ReadOnly = true;
             this.textBoxBuggyConnectStatus.Size = new System.Drawing.Size(260, 20);
             this.textBoxBuggyConnectStatus.TabIndex = 26;
             // 

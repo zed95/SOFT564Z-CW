@@ -12,3 +12,4 @@ void AddQueue(byte *byteArray, int nBytes);
 void RemoveQueue(byte *byteArray, int nBytes);
 void SetupRequestHandler();
 void SendEnvData();
+void MoveBuggy(byte *byteArray);
