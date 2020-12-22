@@ -94,6 +94,9 @@ namespace SOFT564DSUI
                         case RequestTypes.MoveBuggy:
                             ConnectionManager.Connections[1].asyncSend(request);
                             break;
+                        case RequestTypes.InteractionMode:
+                            ConnectionManager.Connections[1].asyncSend(request);
+                            break;
                         default:
 
                             break;
@@ -149,7 +152,7 @@ namespace SOFT564DSUI
             byte direction;
             List<object> request = new List<object>();
             List<int> dataType = new List<int>();
-            byte[] requestByteArray = new byte[1];
+            byte[] requestByteArray = new byte[2];
 
             while (true)
             {
@@ -204,6 +207,25 @@ namespace SOFT564DSUI
             }
         }
 
+        public static void InteractionMode(byte interactionMode)
+        {
+            List<object> request = new List<object>();
+            List<int> dataType = new List<int>();
+            byte[] requestByteArray = new byte[2];
+
+            request.Add(RequestTypes.InteractionMode);
+            dataType.Add(VarTypes.typeByte);
+
+            request.Add(interactionMode);
+            dataType.Add(VarTypes.typeByte);
+
+            requestByteArray = byteConverter(request, dataType, 2);
+
+            RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
+            MessageHandler.RequestQueue.Enqueue(requestByteArray);
+            RequestQueueMutex.ReleaseMutex();            //Release the mutex
+        }
+
         static public byte[] byteConverter(List<object> request, List<int> dataTypes, int byteCount)
         {
             byte[] byteArray = new byte[byteCount];
@@ -242,6 +264,7 @@ namespace SOFT564DSUI
         public const byte  MoveBuggy            = 5;
         public const byte  BuggyConnect         = 6;
         public const byte  BuggyConnectResponse = 7;
+        public const byte  InteractionMode      = 9;    
 
     }
 
@@ -249,6 +272,13 @@ namespace SOFT564DSUI
     {
         public const int typeByte = 1;
         public const int typeInt32 = 2;
+    }
+
+    static class InteractionMode
+    {
+        public const byte Manual = 1;
+        public const byte Configuration = 2;
+        public const byte Autonomous = 3;
     }
 
     static class BuggyMotorControl

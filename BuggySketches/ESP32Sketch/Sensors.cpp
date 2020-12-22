@@ -1,8 +1,10 @@
 #include <BME280I2C.h>
 #include "CommProtocols.h"
 #include "Sensors.h"
+#include "RequestHandler.h"
 
 BME280I2C bme280;
+TaskHandle_t  AutoEnvDataSend_;
 
 void SetupBME280() {
   while(!bme280.begin()) {
@@ -84,6 +86,34 @@ void ReadLDR(byte *byteArray) {
   dataBytes = (uint8_t*)&ldrVal;
   *byteArray = dataBytes[0];
   *(byteArray + 1) = dataBytes[1];
-  
-  
+}
+
+
+void SetupAutoDataSend() {
+    xTaskCreatePinnedToCore(
+    AutoEnvDataSend,                  // Function that should be called
+    "Autonomous Data Transmission",   // Name of the task (for debugging)
+    10000,                            // Stack size (bytes)
+    NULL,                             // Parameter to pass
+    1,                                // Task priority
+    &AutoEnvDataSend_,                // Task handle
+    1
+  );
+
+  vTaskSuspend(AutoEnvDataSend_);
+}
+
+void AutoEnvDataSend(void *parameter) {
+  while(1) {
+    SendEnvData();
+    vTaskDelay(pdMS_TO_TICKS(50));
+  }
+}
+
+void SuspendAutoDataSend() {
+   vTaskSuspend(AutoEnvDataSend_);
+}
+
+void ResumeAutoDataSend() {
+  vTaskResume(AutoEnvDataSend_);
 }

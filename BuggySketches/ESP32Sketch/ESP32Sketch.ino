@@ -6,6 +6,7 @@
 
 void setup() {
   SetupRequestHandler();
+  SetupAutoDataSend();
   SetupSerial(BUAD_115200);     //initialise serial1 for printing on serial monitor and serial2 for sending to and receiving data from Arduino.
   SetupI2C();                   //initialise i2c for bme280
   SetupBME280();

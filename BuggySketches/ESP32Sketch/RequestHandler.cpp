@@ -86,6 +86,21 @@ void HandleRequest(void *parameter) {
             MoveBuggy(&requestArray[0]);
           }
           break;
+        case INTERACTION_MODE:
+          if (bytesInQueue < 1) {
+            xSemaphoreGive(requestQueueMutex);                      //Give up mutex to allow more data to be added to queue
+            while (bytesInQueue < 1) {}
+            xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
+            RemoveQueue(&requestArray[1], 1);
+            xSemaphoreGive(requestQueueMutex);
+            MoveBuggy(&requestArray[0]);
+          }
+          else {
+            RemoveQueue(&requestArray[1], 1);
+            xSemaphoreGive(requestQueueMutex);
+            InteractionMode(&requestArray[0]);
+          }
+          break;
         default:
           xSemaphoreGive(requestQueueMutex);
           break;
@@ -143,16 +158,31 @@ void SendEnvData() {
   envData[0] = 4;               //Indicate request type
   ReadBME280Data(&envData[1]);  //Get BME280 data
   ReadLDR(&envData[4]);
-  Serial.println(envData[0]);
-  Serial.println(envData[1]);
-  Serial.println(envData[2]);
-  Serial.println(envData[3]);
-  Serial.println(envData[4]);
-  Serial.println(envData[5]);
   SendWiFi(controllerClient, &envData[0], sizeof(envData));
   
 }
 
 void MoveBuggy(byte *byteArray) {
   SendSerial(byteArray, 2,  SERIAL2);
+}
+
+void InteractionMode(byte *byteArray) {
+  SendSerial(byteArray, 2,  SERIAL2);
+
+  switch(*(byteArray + 1)) {
+    case INTMODE_MANUAL:
+      SuspendAutoDataSend();
+      break;
+    case INTMODE_CONFIGURATION:
+      SuspendAutoDataSend();
+      break;
+    case INTMODE_AUTONOMOUS:
+      ResumeAutoDataSend();
+      break;
+    default:
+      SuspendAutoDataSend();
+      break;
+  }
+
+  
 }

@@ -45,6 +45,9 @@ namespace SOFT564DSUI
             comboBoxIntMode.Items.Add("Autonomous");
             comboBoxIntMode.Items.Add("Configuration");
 
+            comboBoxConfig.Items.Add("Data Request Frequency - Autonomous Mode");
+
+
 
             
 
@@ -288,6 +291,7 @@ namespace SOFT564DSUI
                     buttonConfigUpdate.Enabled = false;
                     textBoxNewConfig.Enabled = false;
                     BuggyMotorControl.RestartMotorControl();
+                    MessageHandler.InteractionMode(InteractionMode.Manual);
                     break;
                 case "Autonomous":
                     TempTextBox.Enabled = true;
@@ -304,6 +308,7 @@ namespace SOFT564DSUI
                     textBoxNewConfig.Enabled = false;
                     buttonReqData.Enabled = false;
                     BuggyMotorControl.PauseMotorControl();
+                    MessageHandler.InteractionMode(InteractionMode.Autonomous);
                     break;
                 case "Configuration":
                     comboBoxConfig.Enabled = true;
@@ -320,6 +325,7 @@ namespace SOFT564DSUI
                     LIntTextBox.Enabled = false;
                     buttonReqData.Enabled = false;
                     BuggyMotorControl.PauseMotorControl();
+                    MessageHandler.InteractionMode(InteractionMode.Configuration);
                     break;
                 default:
                     comboBoxConfig.Enabled = false;
