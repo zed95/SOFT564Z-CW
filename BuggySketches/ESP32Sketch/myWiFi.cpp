@@ -11,6 +11,11 @@ WiFiClient controllerClient;        //instance that will connect with the contro
 const char* serverIP = "192.168.0.95";
 const int serverPort = 11000;
 
+byte wifiByteBuffer[1000];
+int wifiOldestByte = 0;
+int wifiNewestByte = 0;
+int wifiBytesInQueue = 0;
+
 void SetupWiFi() {
   //Network ssid and password
 
@@ -18,9 +23,9 @@ void SetupWiFi() {
   //  const char* ssid = "VM210ED8";
   //  const char* password = "ysZgas5curvr";
 
-//  //46 Wilson
-//  const char* ssid = "VM5625627";
-//  const char* password = "9shxfpSCjwmb";
+  //  //46 Wilson
+  //  const char* ssid = "VM5625627";
+  //  const char* password = "9shxfpSCjwmb";
 
   //103 Kendal
   const char* ssid = "OriginBroadband16477";
@@ -72,7 +77,7 @@ void SetupListener() {
 
 void SendWiFi(WiFiClient Client, byte *request, int requestSize) {
   //send a number of bytes specified by 'requestSize' starting at 'request' address
-  Client.write(request, requestSize*sizeof(byte));
+  Client.write(request, requestSize * sizeof(byte));
 }
 
 //need to de
@@ -85,12 +90,58 @@ int ReceiveWiFi(WiFiClient Client) {
       //Add code to read in the data from the client
       dataBuffer[byteCount] = Client.read();
       byteCount++;
+      Serial.println("Data Received");
     }
 
     if (byteCount > 0) {
-      xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
-      AddQueue(&dataBuffer[0], byteCount);
-      xSemaphoreGive(requestQueueMutex);
+      AddQueue(wifiByteBuffer, wifiNewestByte, wifiBytesInQueue, &dataBuffer[0], byteCount);
+    }
+
+    if (wifiBytesInQueue > 0) {
+      Serial.println("Adding Request to queue");
+      switch (peekQueue(&wifiByteBuffer[0], wifiOldestByte)) {
+        case REQ_ENV_DATA:
+          xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
+          RemoveQueue(&wifiByteBuffer[0], wifiOldestByte, wifiBytesInQueue, &dataBuffer[0], 1);   //Remove from wifi buffer
+          AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &dataBuffer[0], 1);          //and place in request buffer
+          xSemaphoreGive(requestQueueMutex);
+          break;
+        case MOVE_BUGGY:
+          if (wifiBytesInQueue >= 2) {
+            xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
+            RemoveQueue(&wifiByteBuffer[0], wifiOldestByte, wifiBytesInQueue, &dataBuffer[0], 2);   //Remove from wifi buffer
+            AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &dataBuffer[0], 2);          //and place in request buffer
+            xSemaphoreGive(requestQueueMutex);
+          }
+          break;
+        case INTERACTION_MODE:
+          if (wifiBytesInQueue >= 2) {
+            xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
+            RemoveQueue(&wifiByteBuffer[0], wifiOldestByte, wifiBytesInQueue, &dataBuffer[0], 2);   //Remove from wifi buffer
+            AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &dataBuffer[0], 2);          //and place in request buffer
+            xSemaphoreGive(requestQueueMutex);
+          }
+          break;
+        case CURR_CONFIG_PARAM:
+          if (wifiBytesInQueue >= 2) {
+            xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
+            RemoveQueue(&wifiByteBuffer[0], wifiOldestByte, wifiBytesInQueue, &dataBuffer[0], 2);   //Remove from wifi buffer
+            AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &dataBuffer[0], 2);          //and place in request buffer
+            xSemaphoreGive(requestQueueMutex);
+          }
+          break;
+        case UPDATE_CONFIG_OPTION:
+          if (wifiBytesInQueue >= 6) {
+            xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
+            RemoveQueue(&wifiByteBuffer[0], wifiOldestByte, wifiBytesInQueue, &dataBuffer[0], 6);   //Remove from wifi buffer
+            AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &dataBuffer[0], 6);          //and place in request buffer
+            xSemaphoreGive(requestQueueMutex);
+          }
+          break;
+        default:
+
+          break;
+      }
     }
   }
 }

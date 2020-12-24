@@ -97,7 +97,13 @@ namespace SOFT564DSUI
                         case RequestTypes.InteractionMode:
                             ConnectionManager.Connections[1].asyncSend(request);
                             break;
-                        default:
+                        case RequestTypes.CurrConfigParam:
+                            ConnectionManager.Connections[1].asyncSend(request);
+                            break;
+                        case RequestTypes.SendCurrConfig:
+                            //Display the data on the textbox
+                            break;
+                    default:
 
                             break;
                     }
@@ -135,6 +141,26 @@ namespace SOFT564DSUI
             dataType.Add(VarTypes.typeByte);
 
             requestByteArray = byteConverter(request, dataType, 1);
+
+            RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
+            MessageHandler.RequestQueue.Enqueue(requestByteArray);
+            RequestQueueMutex.ReleaseMutex();            //Release the mutex
+        }
+
+
+        static public void CurrConfigParam(byte configurationOption)
+        {
+            List<object> request = new List<object>();
+            List<int> dataType = new List<int>();
+            byte[] requestByteArray = new byte[2];
+
+            request.Add(RequestTypes.CurrConfigParam);
+            dataType.Add(VarTypes.typeByte);
+
+            request.Add(configurationOption);
+            dataType.Add(VarTypes.typeByte);
+
+            requestByteArray = byteConverter(request, dataType, 2);
 
             RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
             MessageHandler.RequestQueue.Enqueue(requestByteArray);
@@ -257,14 +283,19 @@ namespace SOFT564DSUI
     //A class with a list of all possible request types.
     static class RequestTypes
     {
-        public const byte  ListAddClient        = 1;
-        public const byte  ListRemoveClient     = 2;
-        public const byte  SendEnvData          = 3;
-        public const byte  RecEnvData           = 4;
-        public const byte  MoveBuggy            = 5;
-        public const byte  BuggyConnect         = 6;
-        public const byte  BuggyConnectResponse = 7;
-        public const byte  InteractionMode      = 9;    
+        public const byte ListAddClient        = 1;
+        public const byte ListRemoveClient     = 2;
+        public const byte SendEnvData          = 3;
+        public const byte RecEnvData           = 4;
+        public const byte MoveBuggy            = 5;
+        public const byte BuggyConnect         = 6;
+        public const byte BuggyConnectResponse = 7;
+        public const byte InteractionMode      = 9;
+        public const byte CurrConfigParam      = 10;
+        public const byte SendCurrConfig       = 11;
+        public const byte UpdateConfigOption   = 12;
+        public const byte ConfigUpdateStatus   = 13;
+
 
     }
 
@@ -306,5 +337,13 @@ namespace SOFT564DSUI
             pauseMotorControl = false;
         }
 
+    }
+
+    static class ConfigurationOptions
+    {
+        public const byte AutonomousDataT     = 1;
+        public const byte MaxObjectDistance   = 2;
+        public const byte BuggySpeed          = 3;
+        public const byte LightIntensityDelta = 4;
     }
 }

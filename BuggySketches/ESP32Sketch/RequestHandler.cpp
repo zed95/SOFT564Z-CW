@@ -5,11 +5,10 @@
 
 TaskHandle_t  Task1;
 SemaphoreHandle_t requestQueueMutex;
-const int queueSize = 1000;
 byte requestQueue[queueSize];
-int oldestByte = 0;
-int newestByte = 0;
-int bytesInQueue = 0; //used to check whether queue is full or empty.
+int rhOldestByte = 0;
+int rhNewestByte = 0;
+int rhBytesInQueue = 0; //used to check whether queue is full or empty.
 
 void SetupRequestHandler() {
   requestQueueMutex = xSemaphoreCreateMutex();
@@ -30,76 +29,31 @@ void HandleRequest(void *parameter) {
   byte requestArray[queueSize];
 
   while (1) {
-    while (bytesInQueue > 0) {
+    while (rhBytesInQueue > 0) {
       Serial.println("Im here");
       xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
-      RemoveQueue(&requestArray[0], 1);
-      Serial.println(requestArray[0]);
-      switch (requestArray[0]) {
-        case 1:
-          //Now remove n bytes based on the request type.
-          //when calling the RemoveQueue function I will have to pass the requestArray[1] as the [0] position has the request type in it.
-          //Check whether there are enough bytes in the array for the request type.
-          //If there is not enough bytes don't carry out the operation and just save the request type until there are more bytes in the queue.
-          break;
-        case 2:
-          //Now remove n bytes based on the request type.
-          //when calling the RemoveQueue function I will have to pass the requestArray[1] as the [0] position has the request type in it.
-          //Check whether there are enough bytes in the array for the request type.
-          //If there is not enough bytes don't carry out the operation and just save the request type until there are more bytes in the queue.
-
-          //----Prototype for the above requirement---//
-          if (bytesInQueue < 2) {
-            xSemaphoreGive(requestQueueMutex);                      //Give up mutex to allow more data to be added to queue
-            while (bytesInQueue < 2) {}
-            xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
-            RemoveQueue(&requestArray[1], 2);
-            xSemaphoreGive(requestQueueMutex);
-            //Call the function to carry out the request
-          }
-          else {
-            RemoveQueue(&requestArray[1], 2);
-            xSemaphoreGive(requestQueueMutex);
-            //Call the function to carry out the request
-          }
-          break;
+      switch (peekQueue(&requestQueue[0], rhOldestByte)) {
         case REQ_ENV_DATA:
            //Prototype is not needed in this case as this request only takes the request ID
-           //Just call the function to extract the data and send it over to the client.
-           //Create a handler function that carries out the request.
+           RemoveQueue(&requestQueue[0], rhOldestByte, rhBytesInQueue, &requestArray[0], 1);
            Serial.println("Here Now");
            SendEnvData();
            xSemaphoreGive(requestQueueMutex);
           break;
         case MOVE_BUGGY:
-          if (bytesInQueue < 1) {
-            xSemaphoreGive(requestQueueMutex);                      //Give up mutex to allow more data to be added to queue
-            while (bytesInQueue < 1) {}
-            xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
-            RemoveQueue(&requestArray[1], 1);
-            xSemaphoreGive(requestQueueMutex);
-            MoveBuggy(&requestArray[0]);
-          }
-          else {
-            RemoveQueue(&requestArray[1], 1);
-            xSemaphoreGive(requestQueueMutex);
-            MoveBuggy(&requestArray[0]);
-          }
+          RemoveQueue(&requestQueue[0], rhOldestByte, rhBytesInQueue, &requestArray[0], 2);
+          MoveBuggy(&requestArray[0]);
+          xSemaphoreGive(requestQueueMutex);
           break;
         case INTERACTION_MODE:
-          if (bytesInQueue < 1) {
-            xSemaphoreGive(requestQueueMutex);                      //Give up mutex to allow more data to be added to queue
-            while (bytesInQueue < 1) {}
-            xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
-            RemoveQueue(&requestArray[1], 1);
-            xSemaphoreGive(requestQueueMutex);
-            MoveBuggy(&requestArray[0]);
-          }
-          else {
-            RemoveQueue(&requestArray[1], 1);
-            xSemaphoreGive(requestQueueMutex);
-            InteractionMode(&requestArray[0]);
-          }
+          RemoveQueue(&requestQueue[0], rhOldestByte, rhBytesInQueue, &requestArray[0], 2);  
+          InteractionMode(&requestArray[0]);
+          xSemaphoreGive(requestQueueMutex);
+          break;
+        case CURR_CONFIG_PARAM:
+          RemoveQueue(&requestQueue[0], rhOldestByte, rhBytesInQueue, &requestArray[0], 2);
+          CurrConfigParam(&requestArray[0]);
+          xSemaphoreGive(requestQueueMutex);
           break;
         default:
           xSemaphoreGive(requestQueueMutex);
@@ -111,11 +65,11 @@ void HandleRequest(void *parameter) {
 }
 
 
-void AddQueue(byte *byteArray, int nBytes) {
+void AddQueue(byte *queue, int &newestByte, int &bytesInQueue, byte *srcArray, int nBytes) {
 
   for (int x = 0; x < nBytes; x++) {
     if (bytesInQueue < queueSize) {
-      requestQueue[newestByte] = *(byteArray + x);
+      *(queue + newestByte) = *(srcArray + x);
       bytesInQueue++;
       if (newestByte == (queueSize - 1)) {
         newestByte = 0;
@@ -131,11 +85,11 @@ void AddQueue(byte *byteArray, int nBytes) {
   }
 }
 
-void RemoveQueue(byte *byteArray, int nBytes) {
+void RemoveQueue(byte *queue, int &oldestByte, int &bytesInQueue, byte *dstArray, int nBytes) {
 
   for (int i = 0; i < nBytes; i++) {
     if (bytesInQueue > 0) {
-      *(byteArray + i) = requestQueue[oldestByte];
+      *(dstArray + i) = *(queue + oldestByte);
       bytesInQueue--;
       if (oldestByte == (queueSize - 1)) {
         oldestByte = 0;
@@ -150,6 +104,14 @@ void RemoveQueue(byte *byteArray, int nBytes) {
       //-tried to remove more bytes than there were in the queue
     }
   }
+}
+
+byte peekQueue(byte *queue, int oldestByte) {
+  byte firstQueueValue = 0;
+
+  firstQueueValue = *(queue + oldestByte);
+
+  return firstQueueValue;
 }
 
 void SendEnvData() {
@@ -183,6 +145,37 @@ void InteractionMode(byte *byteArray) {
       SuspendAutoDataSend();
       break;
   }
+}
 
+void CurrConfigParam(byte *byteArray) {
+  switch(*(byteArray + 1)) {
+    case AUTONOMOUS_DATA_T:
+      SendCurrConfig((byte*)&dataExtractionPeriod);
+      break;
+    case MAX_OBJECT_DISTANCE:
+      //send the request to buggy 
+      SendSerial(byteArray, 2, SERIAL2);
+      break;
+    case BUGGY_SPEED:
+      SendSerial(byteArray, 2, SERIAL2);
+      break;
+    case LIGHT_INTENSITY_DELTA:
+      SendSerial(byteArray, 2, SERIAL2); 
+      break;
+    default:
+      break;
+  }  
+}
+
+void SendCurrConfig(byte *byteArray) {
+  byte byteBuffer[5];
+
+  byteBuffer[0] = (byte)SEND_CURR_CONFIG;
   
+  //place configuration parameter into the array
+  for(int x = 0; x < 4; x++) {
+    byteBuffer[x + 1] = *(byteArray + x);
+  }
+
+  SendWiFi(controllerClient, &byteBuffer[0], sizeof(byteBuffer));
 }

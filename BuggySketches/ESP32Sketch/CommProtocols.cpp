@@ -1,4 +1,5 @@
 #include "CommProtocols.h"
+#include "RequestHandler.h"
 #include <Wire.h>
 
 
@@ -22,6 +23,25 @@ void SendSerial(byte *byteArray, int byteCount, int serial) {
       }
     }
 }
+
+//void ReceiveSerial() {
+//  byte dataBuffer[1000];
+//  int byteCount = 0;
+//
+//    while (Serial2.available() > 0) {
+//      //Add code to read in the data from the client
+//      dataBuffer[byteCount] = Serial2.read();
+//      byteCount++;
+//    }
+//
+//    if (byteCount > 0) {
+//      xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
+//      AddQueue(&dataBuffer[0], byteCount);
+//      xSemaphoreGive(requestQueueMutex);
+//    }
+//
+//}
+
 
 void SetupI2C() {
   Wire.begin(); //setup ESP32 as i2c master.

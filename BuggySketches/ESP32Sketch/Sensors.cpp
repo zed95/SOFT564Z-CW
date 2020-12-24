@@ -5,6 +5,7 @@
 
 BME280I2C bme280;
 TaskHandle_t  AutoEnvDataSend_;
+int dataExtractionPeriod = 1000;
 
 void SetupBME280() {
   while(!bme280.begin()) {
@@ -106,7 +107,7 @@ void SetupAutoDataSend() {
 void AutoEnvDataSend(void *parameter) {
   while(1) {
     SendEnvData();
-    vTaskDelay(pdMS_TO_TICKS(50));
+    vTaskDelay(pdMS_TO_TICKS(dataExtractionPeriod));
   }
 }
 

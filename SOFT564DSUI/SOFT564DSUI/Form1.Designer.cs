@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.SendButton = new System.Windows.Forms.Button();
             this.ipAddressTB = new System.Windows.Forms.TextBox();
             this.portTB = new System.Windows.Forms.TextBox();
             this.ipAddressLb = new System.Windows.Forms.Label();
@@ -65,7 +64,6 @@
             this.label11 = new System.Windows.Forms.Label();
             this.textBoxCurrConfig = new System.Windows.Forms.TextBox();
             this.label12 = new System.Windows.Forms.Label();
-            this.textBoxNewConfig = new System.Windows.Forms.TextBox();
             this.label13 = new System.Windows.Forms.Label();
             this.buttonConfigUpdate = new System.Windows.Forms.Button();
             this.textBoxConfigStatus = new System.Windows.Forms.TextBox();
@@ -75,17 +73,8 @@
             this.label17 = new System.Windows.Forms.Label();
             this.label18 = new System.Windows.Forms.Label();
             this.label19 = new System.Windows.Forms.Label();
+            this.comboBoxNewConfig = new System.Windows.Forms.ComboBox();
             this.SuspendLayout();
-            // 
-            // SendButton
-            // 
-            this.SendButton.Location = new System.Drawing.Point(200, 72);
-            this.SendButton.Name = "SendButton";
-            this.SendButton.Size = new System.Drawing.Size(75, 23);
-            this.SendButton.TabIndex = 3;
-            this.SendButton.Text = "Send";
-            this.SendButton.UseVisualStyleBackColor = true;
-            this.SendButton.Click += new System.EventHandler(this.SendButton_Click);
             // 
             // ipAddressTB
             // 
@@ -381,6 +370,7 @@
             this.comboBoxConfig.Name = "comboBoxConfig";
             this.comboBoxConfig.Size = new System.Drawing.Size(153, 21);
             this.comboBoxConfig.TabIndex = 36;
+            this.comboBoxConfig.SelectedIndexChanged += new System.EventHandler(this.comboBoxConfig_SelectedIndexChanged);
             // 
             // label11
             // 
@@ -407,13 +397,6 @@
             this.label12.TabIndex = 39;
             this.label12.Text = "Current";
             // 
-            // textBoxNewConfig
-            // 
-            this.textBoxNewConfig.Location = new System.Drawing.Point(258, 271);
-            this.textBoxNewConfig.Name = "textBoxNewConfig";
-            this.textBoxNewConfig.Size = new System.Drawing.Size(153, 20);
-            this.textBoxNewConfig.TabIndex = 40;
-            // 
             // label13
             // 
             this.label13.AutoSize = true;
@@ -431,6 +414,7 @@
             this.buttonConfigUpdate.TabIndex = 42;
             this.buttonConfigUpdate.Text = "Update";
             this.buttonConfigUpdate.UseVisualStyleBackColor = true;
+            this.buttonConfigUpdate.Click += new System.EventHandler(this.buttonConfigUpdate_Click);
             // 
             // textBoxConfigStatus
             // 
@@ -491,11 +475,21 @@
             this.label19.TabIndex = 49;
             this.label19.Text = "Server Connect Controls";
             // 
+            // comboBoxNewConfig
+            // 
+            this.comboBoxNewConfig.FormattingEnabled = true;
+            this.comboBoxNewConfig.Location = new System.Drawing.Point(258, 272);
+            this.comboBoxNewConfig.Name = "comboBoxNewConfig";
+            this.comboBoxNewConfig.Size = new System.Drawing.Size(153, 21);
+            this.comboBoxNewConfig.TabIndex = 50;
+            this.comboBoxNewConfig.SelectedIndexChanged += new System.EventHandler(this.comboBoxNewConfig_SelectedIndexChanged);
+            // 
             // ClientGUI
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(692, 331);
+            this.Controls.Add(this.comboBoxNewConfig);
             this.Controls.Add(this.label19);
             this.Controls.Add(this.label18);
             this.Controls.Add(this.label17);
@@ -505,7 +499,6 @@
             this.Controls.Add(this.textBoxConfigStatus);
             this.Controls.Add(this.buttonConfigUpdate);
             this.Controls.Add(this.label13);
-            this.Controls.Add(this.textBoxNewConfig);
             this.Controls.Add(this.label12);
             this.Controls.Add(this.textBoxCurrConfig);
             this.Controls.Add(this.label11);
@@ -542,7 +535,6 @@
             this.Controls.Add(this.ipAddressLb);
             this.Controls.Add(this.portTB);
             this.Controls.Add(this.ipAddressTB);
-            this.Controls.Add(this.SendButton);
             this.KeyPreview = true;
             this.Name = "ClientGUI";
             this.Text = "Client GUI SOFT564Z";
@@ -555,7 +547,6 @@
         }
 
         #endregion
-        private System.Windows.Forms.Button SendButton;
         private System.Windows.Forms.TextBox ipAddressTB;
         private System.Windows.Forms.TextBox portTB;
         private System.Windows.Forms.Label ipAddressLb;
@@ -592,7 +583,6 @@
         private System.Windows.Forms.Label label11;
         private System.Windows.Forms.TextBox textBoxCurrConfig;
         private System.Windows.Forms.Label label12;
-        private System.Windows.Forms.TextBox textBoxNewConfig;
         private System.Windows.Forms.Label label13;
         private System.Windows.Forms.Button buttonConfigUpdate;
         private System.Windows.Forms.TextBox textBoxConfigStatus;
@@ -602,6 +592,7 @@
         private System.Windows.Forms.Label label17;
         private System.Windows.Forms.Label label18;
         private System.Windows.Forms.Label label19;
+        private System.Windows.Forms.ComboBox comboBoxNewConfig;
     }
 }
 

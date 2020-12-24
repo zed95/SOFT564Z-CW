@@ -35,7 +35,7 @@ namespace SOFT564DSUI
             textBoxCurrConfig.Enabled = false;
             textBoxConfigStatus.Enabled = false;
             buttonConfigUpdate.Enabled = false;
-            textBoxNewConfig.Enabled = false;
+            comboBoxNewConfig.Enabled = false;
             TempTextBox.Enabled = false;
             HumTextBox.Enabled = false;
             LIntTextBox.Enabled = false;
@@ -45,7 +45,10 @@ namespace SOFT564DSUI
             comboBoxIntMode.Items.Add("Autonomous");
             comboBoxIntMode.Items.Add("Configuration");
 
-            comboBoxConfig.Items.Add("Data Request Frequency - Autonomous Mode");
+            comboBoxConfig.Items.Add("Autonomous Data T (ms)");          //sets the period data requests in autonomous mode.
+            comboBoxConfig.Items.Add("Max Object Distance (cm)");        //Sets the closest distance that the buggy can be from object before it stops.
+            comboBoxConfig.Items.Add("Buggy Speed");                //Changes Buggy speed.
+            comboBoxConfig.Items.Add("Light Intensity Delta");      //used to set the difference in light levels which determines wheter the buggy should turn in autonomous mode.
 
 
 
@@ -139,10 +142,6 @@ namespace SOFT564DSUI
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
-            if(e.KeyCode == Keys.Enter)
-            {
-                SendButton.PerformClick();
-            }
             if (!BuggyMotorControl.pauseMotorControl)
             {
                 if (e.KeyCode == Keys.W)
@@ -166,10 +165,7 @@ namespace SOFT564DSUI
 
         private void Form1_KeyUp(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Enter)
-            {
-                SendButton.PerformClick();
-            }
+
             if (!BuggyMotorControl.pauseMotorControl)
             {
                 if (e.KeyCode == Keys.W)
@@ -289,7 +285,7 @@ namespace SOFT564DSUI
                     textBoxCurrConfig.Enabled = false;
                     textBoxConfigStatus.Enabled = false;
                     buttonConfigUpdate.Enabled = false;
-                    textBoxNewConfig.Enabled = false;
+                    comboBoxNewConfig.Enabled = false;
                     BuggyMotorControl.RestartMotorControl();
                     MessageHandler.InteractionMode(InteractionMode.Manual);
                     break;
@@ -305,7 +301,7 @@ namespace SOFT564DSUI
                     textBoxCurrConfig.Enabled = false;
                     textBoxConfigStatus.Enabled = false;
                     buttonConfigUpdate.Enabled = false;
-                    textBoxNewConfig.Enabled = false;
+                    comboBoxNewConfig.Enabled = false;
                     buttonReqData.Enabled = false;
                     BuggyMotorControl.PauseMotorControl();
                     MessageHandler.InteractionMode(InteractionMode.Autonomous);
@@ -319,7 +315,7 @@ namespace SOFT564DSUI
                     textBoxCurrConfig.Enabled = true;
                     textBoxConfigStatus.Enabled = true;
                     buttonConfigUpdate.Enabled = true;
-                    textBoxNewConfig.Enabled = true;
+                    comboBoxNewConfig.Enabled = true;
                     TempTextBox.Enabled = false;
                     HumTextBox.Enabled = false;
                     LIntTextBox.Enabled = false;
@@ -336,7 +332,7 @@ namespace SOFT564DSUI
                     textBoxConfigStatus.Enabled = false;
                     textBoxCurrConfig.Enabled = false;
                     buttonConfigUpdate.Enabled = false;
-                    textBoxNewConfig.Enabled = false;
+                    comboBoxNewConfig.Enabled = false;
                     TempTextBox.Enabled = false;
                     HumTextBox.Enabled = false;
                     LIntTextBox.Enabled = false;
@@ -367,6 +363,60 @@ namespace SOFT564DSUI
         }
 
         private void buttonLeft_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void comboBoxNewConfig_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void comboBoxConfig_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            comboBoxNewConfig.Items.Clear();                    //new config option selected, clear out old options from the New combo box.
+                    
+            switch (comboBoxConfig.SelectedItem.ToString())
+            {
+                case "Autonomous Data T (ms)":
+                    comboBoxNewConfig.Items.Add(1000);
+                    comboBoxNewConfig.Items.Add(500);
+                    comboBoxNewConfig.Items.Add(200);
+                    comboBoxNewConfig.Items.Add(100);
+                    comboBoxNewConfig.Items.Add(50);
+                    MessageHandler.CurrConfigParam(ConfigurationOptions.AutonomousDataT);
+                    break;
+                case "Max Object Distance (cm)":
+                    comboBoxNewConfig.Items.Add(50);
+                    comboBoxNewConfig.Items.Add(40);
+                    comboBoxNewConfig.Items.Add(30);
+                    comboBoxNewConfig.Items.Add(20);
+                    comboBoxNewConfig.Items.Add(10);
+                    MessageHandler.CurrConfigParam(ConfigurationOptions.MaxObjectDistance);
+                    break;
+                case "Buggy Speed":
+                    comboBoxNewConfig.Items.Add(255);
+                    comboBoxNewConfig.Items.Add(230);
+                    comboBoxNewConfig.Items.Add(210);
+                    comboBoxNewConfig.Items.Add(190);
+                    comboBoxNewConfig.Items.Add(170);
+                    MessageHandler.CurrConfigParam(ConfigurationOptions.BuggySpeed);
+                    break;
+                case "Light Intensity Delta":
+                    comboBoxNewConfig.Items.Add(100);
+                    comboBoxNewConfig.Items.Add(70);
+                    comboBoxNewConfig.Items.Add(40);
+                    comboBoxNewConfig.Items.Add(20);
+                    comboBoxNewConfig.Items.Add(10);
+                    MessageHandler.CurrConfigParam(ConfigurationOptions.LightIntensityDelta);
+                    break;
+                default:
+
+                    break;
+            }
+        }
+
+        private void buttonConfigUpdate_Click(object sender, EventArgs e)
         {
 
         }

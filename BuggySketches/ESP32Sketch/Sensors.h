@@ -1,6 +1,6 @@
 
 #define LDR_PIN   36
-
+extern int dataExtractionPeriod;
 
 //Functions
 void SetupBME280();
