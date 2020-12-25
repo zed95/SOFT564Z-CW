@@ -219,6 +219,20 @@ namespace SOFT564DSUI
                                 goto breakout;
                             }
                             break;
+                        case RequestTypes.SendCurrConfig:
+                            if (bytesLeft >= 5)
+                            {
+                                tempQueue.Enqueue(ExtractRequest(unqueuedBytesBuffer, 5));
+                                bytesLeft -= 5;
+                                Buffer.BlockCopy(unqueuedBytesBuffer, 5, unqueuedBytesBuffer, 0, bytesLeft);
+                                Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
+                            }
+                            else
+                            {
+                                //if the command is recognised but not all required bytes arrived then jump 'breakout' to continue with the code
+                                goto breakout;
+                            }
+                            break;
                         default:
                             break;
                     }

@@ -117,6 +117,8 @@ namespace SOFT564DSUI
                     statusTB.Invoke((MethodInvoker)(() => statusTB.Text = "Disconnected"));
                     Thread.CurrentThread.Abort();
                 }
+
+                textBoxCurrConfig.Invoke((MethodInvoker)(() => textBoxCurrConfig.Text = BuggyParameters.currConfigParam.ToString()));
             }
         }
         private void Form1_Load(object sender, EventArgs e)
@@ -418,7 +420,24 @@ namespace SOFT564DSUI
 
         private void buttonConfigUpdate_Click(object sender, EventArgs e)
         {
+            switch (comboBoxConfig.SelectedItem.ToString())
+            {
+                case "Autonomous Data T (ms)":
+                    MessageHandler.UpdateConfigOption(ConfigurationOptions.AutonomousDataT, Int32.Parse(comboBoxNewConfig.SelectedItem.ToString()));
+                    break;
+                case "Max Object Distance (cm)":
+                    MessageHandler.UpdateConfigOption(ConfigurationOptions.MaxObjectDistance, Int32.Parse(comboBoxNewConfig.SelectedItem.ToString()));
+                    break;
+                case "Buggy Speed":
+                    MessageHandler.UpdateConfigOption(ConfigurationOptions.BuggySpeed, Int32.Parse(comboBoxNewConfig.SelectedItem.ToString()));
+                    break;
+                case "Light Intensity Delta":
+                    MessageHandler.UpdateConfigOption(ConfigurationOptions.LightIntensityDelta, Int32.Parse(comboBoxNewConfig.SelectedItem.ToString()));
+                    break;
+                default:
 
+                    break;
+            }
         }
     }
 }

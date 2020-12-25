@@ -101,8 +101,11 @@ namespace SOFT564DSUI
                             ConnectionManager.Connections[1].asyncSend(request);
                             break;
                         case RequestTypes.SendCurrConfig:
-                            //Display the data on the textbox
+                            BuggyParameters.currConfigParam = BitConverter.ToInt32(request, 1);
                             break;
+                        case RequestTypes.UpdateConfigOption:
+                            ConnectionManager.Connections[1].asyncSend(request);
+                        break;
                     default:
 
                             break;
@@ -161,6 +164,28 @@ namespace SOFT564DSUI
             dataType.Add(VarTypes.typeByte);
 
             requestByteArray = byteConverter(request, dataType, 2);
+
+            RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
+            MessageHandler.RequestQueue.Enqueue(requestByteArray);
+            RequestQueueMutex.ReleaseMutex();            //Release the mutex
+        }
+
+        static public void UpdateConfigOption(byte configurationOption, Int32 configurationParameter)
+        {
+            List<object> request = new List<object>();
+            List<int> dataType = new List<int>();
+            byte[] requestByteArray = new byte[2];
+
+            request.Add(RequestTypes.UpdateConfigOption);
+            dataType.Add(VarTypes.typeByte);
+
+            request.Add(configurationOption);
+            dataType.Add(VarTypes.typeByte);
+
+            request.Add(configurationParameter);
+            dataType.Add(VarTypes.typeInt32);
+
+            requestByteArray = byteConverter(request, dataType, 6);
 
             RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
             MessageHandler.RequestQueue.Enqueue(requestByteArray);

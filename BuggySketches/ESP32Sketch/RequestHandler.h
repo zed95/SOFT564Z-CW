@@ -7,6 +7,7 @@
 #define CURR_CONFIG_PARAM     10
 #define SEND_CURR_CONFIG      11
 #define UPDATE_CONFIG_OPTION  12
+#define CONFIG_UPDATE_STATUS  13
 
 
 
@@ -38,3 +39,5 @@ void InteractionMode(byte *byteArray);
 void SendCurrConfig(byte *byteArray);
 void CurrConfigParam(byte *byteArray);
 byte peekQueue(byte *queue, int oldestByte);
+void UpdateConfigOption(byte *byteArray);
+int ToInt(byte *byteArray);

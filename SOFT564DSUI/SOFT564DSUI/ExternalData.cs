@@ -88,4 +88,9 @@ namespace SOFT564DSUI
         public const byte ConnectPermitted = 1;
         public const byte BuggyInUse = 2;
     }
+
+    static class BuggyParameters
+    {
+        public static int currConfigParam = 0;
+    }
 }

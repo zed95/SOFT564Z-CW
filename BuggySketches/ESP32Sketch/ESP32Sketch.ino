@@ -18,5 +18,6 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   ReceiveWiFi(controllerClient);
+  ReceiveSerial();
   vTaskDelay(pdMS_TO_TICKS(50));
 }

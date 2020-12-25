@@ -86,60 +86,62 @@ int ReceiveWiFi(WiFiClient Client) {
   int byteCount = 0;
 
   if (Client.connected()) {
-    while (Client.available() > 0) {
+    while (Client.available() > 0) {                                              //read the data if any is available
       //Add code to read in the data from the client
       dataBuffer[byteCount] = Client.read();
-      byteCount++;
+      byteCount++;                                                                //record how many bytes were read
       Serial.println("Data Received");
     }
 
     if (byteCount > 0) {
-      AddQueue(wifiByteBuffer, wifiNewestByte, wifiBytesInQueue, &dataBuffer[0], byteCount);
+      AddQueue(&wifiByteBuffer[0], wifiNewestByte, wifiBytesInQueue, &dataBuffer[0], byteCount);    //store the newly read bytes into a queue for processing
     }
 
-    if (wifiBytesInQueue > 0) {
+    if (wifiBytesInQueue > 0) {                                                                     //if there are any bytes in the wifi queue waiting to be processed
       Serial.println("Adding Request to queue");
-      switch (peekQueue(&wifiByteBuffer[0], wifiOldestByte)) {
+      switch (peekQueue(&wifiByteBuffer[0], wifiOldestByte)) {                                      //then peek the first byte to check what kind of request it is
         case REQ_ENV_DATA:
-          xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
-          RemoveQueue(&wifiByteBuffer[0], wifiOldestByte, wifiBytesInQueue, &dataBuffer[0], 1);   //Remove from wifi buffer
-          AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &dataBuffer[0], 1);          //and place in request buffer
-          xSemaphoreGive(requestQueueMutex);
+          if (wifiBytesInQueue >= 1) {                                                              //only place request data into request handler queue if there are at least as many bytes in the wifi queue as the specific request requires
+            xSemaphoreTake(requestQueueMutex, portMAX_DELAY);                                       //take mutex before adding the to request handler queue to allow task/thread safe operations on the queue
+            RemoveQueue(&wifiByteBuffer[0], wifiOldestByte, wifiBytesInQueue, &dataBuffer[0], 1);   //Remove request data from wifi queue
+            AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &dataBuffer[0], 1);            //and place in request handler queue
+            xSemaphoreGive(requestQueueMutex);                                                      //release the mutex when operation on the request handler queue is finished
+          }
           break;
         case MOVE_BUGGY:
-          if (wifiBytesInQueue >= 2) {
+          if (wifiBytesInQueue >= 2) {                                                            
             xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
-            RemoveQueue(&wifiByteBuffer[0], wifiOldestByte, wifiBytesInQueue, &dataBuffer[0], 2);   //Remove from wifi buffer
-            AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &dataBuffer[0], 2);          //and place in request buffer
+            RemoveQueue(&wifiByteBuffer[0], wifiOldestByte, wifiBytesInQueue, &dataBuffer[0], 2);
+            AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &dataBuffer[0], 2);
             xSemaphoreGive(requestQueueMutex);
           }
           break;
         case INTERACTION_MODE:
           if (wifiBytesInQueue >= 2) {
             xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
-            RemoveQueue(&wifiByteBuffer[0], wifiOldestByte, wifiBytesInQueue, &dataBuffer[0], 2);   //Remove from wifi buffer
-            AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &dataBuffer[0], 2);          //and place in request buffer
+            RemoveQueue(&wifiByteBuffer[0], wifiOldestByte, wifiBytesInQueue, &dataBuffer[0], 2);
+            AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &dataBuffer[0], 2);
             xSemaphoreGive(requestQueueMutex);
           }
           break;
         case CURR_CONFIG_PARAM:
           if (wifiBytesInQueue >= 2) {
             xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
-            RemoveQueue(&wifiByteBuffer[0], wifiOldestByte, wifiBytesInQueue, &dataBuffer[0], 2);   //Remove from wifi buffer
-            AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &dataBuffer[0], 2);          //and place in request buffer
+            RemoveQueue(&wifiByteBuffer[0], wifiOldestByte, wifiBytesInQueue, &dataBuffer[0], 2);
+            AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &dataBuffer[0], 2);
             xSemaphoreGive(requestQueueMutex);
           }
           break;
         case UPDATE_CONFIG_OPTION:
           if (wifiBytesInQueue >= 6) {
             xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
-            RemoveQueue(&wifiByteBuffer[0], wifiOldestByte, wifiBytesInQueue, &dataBuffer[0], 6);   //Remove from wifi buffer
-            AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &dataBuffer[0], 6);          //and place in request buffer
+            RemoveQueue(&wifiByteBuffer[0], wifiOldestByte, wifiBytesInQueue, &dataBuffer[0], 6);
+            AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &dataBuffer[0], 6);
             xSemaphoreGive(requestQueueMutex);
           }
           break;
         default:
-
+          //Add Code to handle unrecognised request
           break;
       }
     }

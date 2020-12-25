@@ -16,3 +16,4 @@
 void SetupSerial(int buadRate);
 void SetupI2C();
 void SendSerial(byte *byteArray, int byteCount, int serial);
+void ReceiveSerial();
