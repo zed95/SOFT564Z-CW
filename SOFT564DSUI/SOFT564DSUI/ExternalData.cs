@@ -89,8 +89,9 @@ namespace SOFT564DSUI
         public const byte BuggyInUse = 2;
     }
 
-    static class BuggyParameters
+    static class BuggyConfigurationData
     {
         public static int currConfigParam = 0;
+        public static int configUpdateStatus = 0;
     }
 }

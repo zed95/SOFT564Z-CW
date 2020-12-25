@@ -15,6 +15,7 @@ namespace SOFT564DSUI
     static class MessageHandler
     {
         static public bool newClient = false;
+        static public bool configStatusUpdate = false;
         static public bool removeClient = false;
         static public Queue<Byte[]> RequestQueue = new Queue<byte[]>();
         public static Mutex RequestQueueMutex = new Mutex();
@@ -101,11 +102,15 @@ namespace SOFT564DSUI
                             ConnectionManager.Connections[1].asyncSend(request);
                             break;
                         case RequestTypes.SendCurrConfig:
-                            BuggyParameters.currConfigParam = BitConverter.ToInt32(request, 1);
+                            BuggyConfigurationData.currConfigParam = BitConverter.ToInt32(request, 1);
                             break;
                         case RequestTypes.UpdateConfigOption:
                             ConnectionManager.Connections[1].asyncSend(request);
                         break;
+                        case RequestTypes.ConfigUpdateStatus:
+                            BuggyConfigurationData.configUpdateStatus = request[1];
+                            configStatusUpdate = true;
+                            break;
                     default:
 
                             break;

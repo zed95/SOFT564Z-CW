@@ -3,7 +3,7 @@
 
 //Values
 #define BAUD_9600       9600
-#define BUAD_115200     115200
+#define BAUD_115200     115200
 #define SERIAL1         1
 #define SERIAL2         2
 

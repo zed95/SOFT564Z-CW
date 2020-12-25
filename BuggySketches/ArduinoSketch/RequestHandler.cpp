@@ -1,5 +1,6 @@
 #include "RequestHandler.h"
 #include "Motor.h"
+#include "MySerial.h"
 
 byte requestQueue[queueSize];
 byte handlerRequestArray[queueSize];
@@ -10,20 +11,24 @@ int pendingRequestData = 0;
 
 void HandleRequest() {
   byte requestArray[queueSize];
-  
+
   while (rhBytesInQueue > 0) {
     switch (peekQueue(&requestQueue[0], rhOldestByte)) {
       case MOVE_BUGGY:
         RemoveQueue(&requestQueue[0], rhOldestByte, rhBytesInQueue, &requestArray[0], 2);
         MoveBuggy(*(requestArray + 1));
         break;
+      case INTERACTION_MODE:
+          RemoveQueue(&requestQueue[0], rhOldestByte, rhBytesInQueue, &requestArray[0], 2);
+          //Add Function
+        break;
       case CURR_CONFIG_PARAM:
         RemoveQueue(&requestQueue[0], rhOldestByte, rhBytesInQueue, &requestArray[0], 2);
-        //Add Function
+        CurrConfigParam(&requestArray[0]);
         break;
       case UPDATE_CONFIG_OPTION:
         RemoveQueue(&requestQueue[0], rhOldestByte, rhBytesInQueue, &requestArray[0], 6);
-        //Add Function
+        UpdateConfigOption(&requestArray[0]);
         break;
       default:
         break;
@@ -99,7 +104,6 @@ void MoveBuggy(byte dir) {
   //1101      left right and forward = forward
   //1110      left, right, reverse = reverse
   //1111      no motion
-
   switch (dir) {
     case 0:
       MStop();
@@ -153,4 +157,78 @@ void MoveBuggy(byte dir) {
       MStop();
       break;
   }
+}
+
+void CurrConfigParam(byte *byteArray) {
+
+  switch (*(byteArray + 1)) {
+    case MAX_OBJECT_DISTANCE:
+      //SendCurrConfig(maxObjectDistance);
+      break;
+    case BUGGY_SPEED:
+      SendCurrConfig(buggySpeed);
+      break;
+    case LIGHT_INTENSITY_DELTA:
+      //SendCurrConfig(lightIntensityDelta);
+      break;
+    default:
+      break;
+  }
+}
+
+
+void SendCurrConfig(uint32_t parameter) {
+  byte byteBuffer[5];
+  byte *p;
+
+  byteBuffer[0] = (byte)SEND_CURR_CONFIG;         //request type goes to position 0
+  p = (byte*)&parameter;                          //point to the first byte of parameter
+  for (int x = 0; x < 4; x++) {                   //place the bytes of parameter into the array after request type.
+    byteBuffer[x + 1] = *(p + x);
+  }
+
+  Serial.println(byteBuffer[0]);
+  Serial.println(byteBuffer[1]);
+  Serial.println(byteBuffer[2]);
+  Serial.println(byteBuffer[3]);
+  Serial.println(byteBuffer[4]);
+  SendSerial(&byteBuffer[0], 5);
+}
+
+void UpdateConfigOption(byte *byteArray) {
+  switch (*(byteArray + 1)) {
+    case MAX_OBJECT_DISTANCE:
+      //change max distance to object
+      //ConfigUpdateStatus(CONFIG_UPDATE_STATUS_OK);
+      break;
+    case BUGGY_SPEED:
+      buggySpeed = ToInt(&byteArray[2]);
+      ConfigUpdateStatus(CONFIG_UPDATE_STATUS_OK);
+      break;
+    case LIGHT_INTENSITY_DELTA:
+      //change light intensity delta
+      //ConfigUpdateStatus(CONFIG_UPDATE_STATUS_OK);
+      break;
+    default:
+      break;
+  }
+}
+
+int ToInt(byte *byteArray) {
+  int intResult = 0;
+
+  for (int x = 0; x < 4; x++) {
+    intResult = (intResult | (*(byteArray + x) << (8 * x)));
+  }
+
+  return intResult;
+}
+
+void ConfigUpdateStatus(byte updateStatus) {
+  byte byteBuffer[2];
+
+  byteBuffer[0] = CONFIG_UPDATE_STATUS;
+  byteBuffer[1] = updateStatus;
+
+  SendSerial(&byteBuffer[0], 2);
 }

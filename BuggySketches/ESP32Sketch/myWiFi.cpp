@@ -77,6 +77,7 @@ void SetupListener() {
 
 void SendWiFi(WiFiClient Client, byte *request, int requestSize) {
   //send a number of bytes specified by 'requestSize' starting at 'request' address
+  Serial.println("Send Curr Config 3");
   Client.write(request, requestSize * sizeof(byte));
 }
 

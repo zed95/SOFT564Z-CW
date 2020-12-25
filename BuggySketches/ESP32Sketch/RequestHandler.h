@@ -20,6 +20,8 @@
 #define BUGGY_SPEED           3
 #define LIGHT_INTENSITY_DELTA 4
 
+#define CONFIG_UPDATE_STATUS_OK   1
+
 
 const int queueSize = 1000;
 extern SemaphoreHandle_t requestQueueMutex;
@@ -41,3 +43,4 @@ void CurrConfigParam(byte *byteArray);
 byte peekQueue(byte *queue, int oldestByte);
 void UpdateConfigOption(byte *byteArray);
 int ToInt(byte *byteArray);
+void ConfigUpdateStatus(byte updateStatus);

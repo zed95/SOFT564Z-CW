@@ -12,8 +12,10 @@
 #define BRAKE_ON      1
 #define BRAKE_OFF     0
 
+extern uint32_t buggySpeed;
 
-void setupMotor();
+
+void SetupMotor();
 void MStop();
 void MForward();
 void MReverse();

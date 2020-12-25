@@ -118,7 +118,16 @@ namespace SOFT564DSUI
                     Thread.CurrentThread.Abort();
                 }
 
-                textBoxCurrConfig.Invoke((MethodInvoker)(() => textBoxCurrConfig.Text = BuggyParameters.currConfigParam.ToString()));
+                textBoxCurrConfig.Invoke((MethodInvoker)(() => textBoxCurrConfig.Text = BuggyConfigurationData.currConfigParam.ToString()));
+
+                if(MessageHandler.configStatusUpdate)
+                {
+                    if (BuggyConfigurationData.configUpdateStatus == 1)
+                    {
+                        textBoxConfigStatus.Invoke((MethodInvoker)(() => textBoxConfigStatus.Text = "OK"));
+                    }
+                    MessageHandler.configStatusUpdate = false;
+                }
             }
         }
         private void Form1_Load(object sender, EventArgs e)
@@ -420,6 +429,8 @@ namespace SOFT564DSUI
 
         private void buttonConfigUpdate_Click(object sender, EventArgs e)
         {
+            textBoxConfigStatus.Clear();    //Clears the textbox
+
             switch (comboBoxConfig.SelectedItem.ToString())
             {
                 case "Autonomous Data T (ms)":

@@ -1,7 +1,8 @@
 #include "Motor.h"
+uint32_t buggySpeed = 255;
 
 
-void setupMotor() {
+void SetupMotor() {
   pinMode(RIGHT_DIR, OUTPUT);
   pinMode(LEFT_DIR, OUTPUT);
   pinMode(RIGHT_BRAKE, OUTPUT);
@@ -15,43 +16,43 @@ void MStop() {
 }
 
 void MForward() {
-  WriteRightMotor(REVERSE, 255, BRAKE_OFF);
-  WriteLeftMotor(FORWARD, 255, BRAKE_OFF);
+  WriteRightMotor(REVERSE, buggySpeed, BRAKE_OFF);
+  WriteLeftMotor(FORWARD, buggySpeed, BRAKE_OFF);
 }
 
 void MReverse() {
-  WriteRightMotor(FORWARD, 255, BRAKE_OFF);
-  WriteLeftMotor(REVERSE, 255, BRAKE_OFF);
+  WriteRightMotor(FORWARD, buggySpeed, BRAKE_OFF);
+  WriteLeftMotor(REVERSE, buggySpeed, BRAKE_OFF);
 }
 
 void MRotateClockwise() {
-  WriteRightMotor(FORWARD, 255, BRAKE_OFF);
-  WriteLeftMotor(FORWARD, 255, BRAKE_OFF);
+  WriteRightMotor(FORWARD, buggySpeed, BRAKE_OFF);
+  WriteLeftMotor(FORWARD, buggySpeed, BRAKE_OFF);
 }
 
 void MRotateAnitClockwise() {
-  WriteRightMotor(REVERSE, 255, BRAKE_OFF);
-  WriteLeftMotor(REVERSE, 255, BRAKE_OFF);
+  WriteRightMotor(REVERSE, buggySpeed, BRAKE_OFF);
+  WriteLeftMotor(REVERSE, buggySpeed, BRAKE_OFF);
 }
 
 void MFordwardRight() {
-  WriteRightMotor(REVERSE, 130, BRAKE_OFF);
-  WriteLeftMotor(FORWARD, 255, BRAKE_OFF);  
+  WriteRightMotor(REVERSE, buggySpeed/2, BRAKE_OFF);
+  WriteLeftMotor(FORWARD, buggySpeed, BRAKE_OFF);  
 }
 
 void MFordwardLeft() {
-  WriteRightMotor(REVERSE, 255, BRAKE_OFF);
-  WriteLeftMotor(FORWARD, 130, BRAKE_OFF);   
+  WriteRightMotor(REVERSE, buggySpeed, BRAKE_OFF);
+  WriteLeftMotor(FORWARD, buggySpeed/2, BRAKE_OFF);   
 }
 
 void MReverseRight() {
-  WriteRightMotor(FORWARD, 130, BRAKE_OFF);
-  WriteLeftMotor(REVERSE, 255, BRAKE_OFF);   
+  WriteRightMotor(FORWARD, buggySpeed/2, BRAKE_OFF);
+  WriteLeftMotor(REVERSE, buggySpeed, BRAKE_OFF);   
 }
 
 void MReverseLeft() {
-  WriteRightMotor(FORWARD, 255, BRAKE_OFF);
-  WriteLeftMotor(REVERSE, 130, BRAKE_OFF); 
+  WriteRightMotor(FORWARD, buggySpeed, BRAKE_OFF);
+  WriteLeftMotor(REVERSE, buggySpeed/2, BRAKE_OFF); 
 }
 
 

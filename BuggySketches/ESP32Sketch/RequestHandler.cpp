@@ -58,6 +58,7 @@ void HandleRequest(void *parameter) {
         case SEND_CURR_CONFIG:
           RemoveQueue(&requestQueue[0], rhOldestByte, rhBytesInQueue, &requestArray[0], 5);
           SendCurrConfig(&requestArray[0]);
+          Serial.println("Send Curr Config 1");
           xSemaphoreGive(requestQueueMutex);
           break;
         case UPDATE_CONFIG_OPTION:
@@ -67,7 +68,7 @@ void HandleRequest(void *parameter) {
           break;
         case CONFIG_UPDATE_STATUS:
           RemoveQueue(&requestQueue[0], rhOldestByte, rhBytesInQueue, &requestArray[0], 2);
-          //Add A function to send thew update status.
+          ConfigUpdateStatus(requestArray[1]);
           xSemaphoreGive(requestQueueMutex);
           break;
         default:
@@ -192,15 +193,12 @@ void CurrConfigParam(byte *byteArray) {
 }
 
 void UpdateConfigOption(byte *byteArray) {
+  
 
   switch (*(byteArray + 1)) {
     case AUTONOMOUS_DATA_T:
       dataExtractionPeriod = ToInt(&byteArray[2]);
-
-      
-      //NEED TO ADD CODE TO SEND STATUS UPDATE TO THE CONTROLLER CLEINT
-
-
+      ConfigUpdateStatus(CONFIG_UPDATE_STATUS_OK);
       break;
     case MAX_OBJECT_DISTANCE:
       //send the request to buggy
@@ -234,6 +232,16 @@ void SendCurrConfig(byte *byteArray) {
   for (int x = 0; x < 5; x++) {
     byteBuffer[x] = *(byteArray + x);
   }
+
+  Serial.println("Send Curr Config 2");
+  SendWiFi(controllerClient, &byteBuffer[0], sizeof(byteBuffer));
+}
+
+void ConfigUpdateStatus(byte updateStatus) {
+  byte byteBuffer[2];
+
+  byteBuffer[0] = CONFIG_UPDATE_STATUS;
+  byteBuffer[1] = updateStatus;
 
   SendWiFi(controllerClient, &byteBuffer[0], sizeof(byteBuffer));
 }
