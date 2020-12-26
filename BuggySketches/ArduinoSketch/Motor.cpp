@@ -1,4 +1,7 @@
 #include "Motor.h"
+#include <Servo.h> 
+
+Servo ultrasonicServo;
 uint32_t buggySpeed = 255;
 
 
@@ -7,6 +10,9 @@ void SetupMotor() {
   pinMode(LEFT_DIR, OUTPUT);
   pinMode(RIGHT_BRAKE, OUTPUT);
   pinMode(LEFT_BRAKE, OUTPUT); 
+
+  ultrasonicServo.attach(SERVO_PIN);
+  ultrasonicServo.write(90);  // set servo to mid-point
 }
 
 

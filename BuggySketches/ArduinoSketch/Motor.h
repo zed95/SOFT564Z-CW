@@ -7,10 +7,12 @@
 #define RIGHT_BRAKE   9
 #define LEFT_BRAKE    8
 
-#define FORWARD      1
+#define FORWARD       1
 #define REVERSE       0
 #define BRAKE_ON      1
 #define BRAKE_OFF     0
+
+#define SERVO_PIN     9
 
 extern uint32_t buggySpeed;
 
