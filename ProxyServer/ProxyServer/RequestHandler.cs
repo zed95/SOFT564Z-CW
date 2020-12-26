@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Net.Sockets;
+using System.Net;
 
 namespace ProxyServer
 {
@@ -53,14 +55,23 @@ namespace ProxyServer
                 switch (request[0])
                 {
                     case RequestTypes.ListAddClient:
+                        sendAllClients(request);
+                        sendClientAll();
                         break;
                     case RequestTypes.ListRemoveClient:
+                        sendAllClients(request);
                         break;
                     case RequestTypes.BuggyConnect:
                         BuggyConnect(BitConverter.ToInt32(request, 1), BitConverter.ToInt32(request, 5));
                         break;
                     case RequestTypes.BuggyConnectResponse:
                         SendResponse(request);
+                        break;
+                    case RequestTypes.AddNewClient:
+                        AddNewClient();
+                        break;
+                    case RequestTypes.RemoveClient:
+                        clientManager.RemoveClient(BitConverter.ToInt32(request, 1));
                         break;
                     default:
 
@@ -71,9 +82,36 @@ namespace ProxyServer
         }
 
 
+        static public void AddNewClient()
+        {
+            Server.SocketQueueMutex.WaitOne();
+            clientManager.AddClient(Server.SocketQueue.Dequeue());
+            Server.SocketQueueMutex.ReleaseMutex();
+        }
+
+        static public void RemoveClient(int clientID)
+        {
+            List<object> request = new List<object>();
+            List<int> dataType = new List<int>();
+            byte[] requestByteArray = new byte[5];
+
+            request.Add(RequestTypes.RemoveClient);
+            dataType.Add(VarTypes.typeByte);
+
+            request.Add(clientID);
+            dataType.Add(VarTypes.typeInt32);
+
+            requestByteArray = byteConverter(request, dataType, 5);
+
+            RequestQueueMutex.WaitOne();
+            RequestQueue.Enqueue(requestByteArray);
+            RequestQueueMutex.ReleaseMutex();
+        } 
+
         static public void BuggyConnect(int buggyID, int senderID)
         {
             int index;
+            int controllerClientIndex;
             List<object> request = new List<object>();
             List<int> dataType = new List<int>();
             byte[] requestByteArray = new byte[9];
@@ -83,9 +121,12 @@ namespace ProxyServer
 
 
             index = clientManager.Clients.FindIndex(x => x.clientID == buggyID);
-            if(!clientManager.Clients[index].inUse)
+            controllerClientIndex = clientManager.Clients.FindIndex(x => x.clientID == senderID);
+
+            if (!clientManager.Clients[index].inUse)
             {
                 clientManager.Clients[index].inUse = true;
+                clientManager.Clients[controllerClientIndex].connectedToBuggy = buggyID;
                 request.Add(BuggyConnectResponse.ConnectPermitted);
                 dataType.Add(VarTypes.typeByte);
             }
@@ -145,15 +186,143 @@ namespace ProxyServer
             return byteArray;
         }
 
+        static public void ListAddClient(Client client)
+        {
+            List<object> request = new List<object>();
+            List<int> dataType = new List<int>();
+            byte[] requestByteArray = new byte[17];
+            String StrIPAddr;
+            IPEndPoint endPoint;
+
+            request.Add(RequestTypes.ListAddClient);
+            dataType.Add(VarTypes.typeByte);
+
+            endPoint = (IPEndPoint)client.clientSocket.RemoteEndPoint;
+            IPAddress addr = endPoint.Address;
+            StrIPAddr = addr.ToString();
+            request.Add(Server.IPtoLong(StrIPAddr));
+            dataType.Add(VarTypes.typeLong);
+
+            request.Add(endPoint.Port);
+            dataType.Add(VarTypes.typeInt32);
+
+            request.Add(client.clientID);
+            dataType.Add(VarTypes.typeInt32);
+
+            requestByteArray = RequestHandler.byteConverter(request, dataType, 17);
+
+            RequestQueueMutex.WaitOne();
+            RequestQueue.Enqueue(requestByteArray);
+            RequestQueueMutex.ReleaseMutex();
+
+        }
+
+        static public void ListRemoveClient(Client client)
+        {
+            List<object> request = new List<object>();
+            List<int> dataType = new List<int>();
+            byte[] requestByteArray = new byte[5];
+
+            request.Add(RequestTypes.ListRemoveClient);
+            dataType.Add(VarTypes.typeByte);
+
+            request.Add(client.clientID);
+            dataType.Add(VarTypes.typeInt32);
+
+            requestByteArray = RequestHandler.byteConverter(request, dataType, 5);
+
+            RequestQueueMutex.WaitOne();
+            RequestQueue.Enqueue(requestByteArray);
+            RequestQueueMutex.ReleaseMutex();
+        }
+
+
+
+        public static void sendAllClients(byte[] request)
+        {
+
+            foreach (Client clients in clientManager.Clients)
+            {
+                
+                try
+                {
+                    if (request[0] == RequestTypes.ListAddClient)
+                    {
+                        //prevents the data about the newest client being sent to itself
+                        if (clients.clientID != clientManager.Clients[clientManager.Clients.Count - 1].clientID)
+                        {
+                            clients.clientSocket.BeginSend(request, 0, request.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other clients
+                        }
+                    }
+                    else if(request[0] == RequestTypes.ListRemoveClient)
+                    {
+                        clients.clientSocket.BeginSend(request, 0, request.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other clients
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Exception in sendAllClients");
+                }
+            }
+        }
+
+
+        public static void sendClientAll()
+        {
+            List<object> request = new List<object>();
+            List<int> dataType = new List<int>();
+            byte[] requestByteArray = new byte[17];
+            String StrIPAddr;
+            IPEndPoint endPoint;
+
+            foreach (Client clients in clientManager.Clients)
+            {
+                try
+                {
+                    request.Add(RequestTypes.ListAddClient);
+                    dataType.Add(VarTypes.typeByte);
+
+                    endPoint = (IPEndPoint)clients.clientSocket.RemoteEndPoint;
+                    IPAddress addr = endPoint.Address;
+                    StrIPAddr = addr.ToString();
+                    request.Add(Server.IPtoLong(StrIPAddr));
+                    dataType.Add(VarTypes.typeLong);
+
+                    request.Add(endPoint.Port);
+                    dataType.Add(VarTypes.typeInt32);
+
+                    request.Add(clients.clientID);
+                    dataType.Add(VarTypes.typeInt32);
+
+                    requestByteArray = RequestHandler.byteConverter(request, dataType, 17);
+
+                    if (clients.clientID != clientManager.Clients[clientManager.Clients.Count - 1].clientID)        //Do not send information about the newest client to itself
+                    {
+                        clientManager.Clients[clientManager.Clients.Count - 1].clientSocket.BeginSend(requestByteArray, 0, requestByteArray.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other clients
+                    }
+
+                    request.Clear();
+                    dataType.Clear();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Exception in sendAllClients");
+                }
+            }
+        }
+
     }
+
 
     //A class with a list of all possible request types.
     static class RequestTypes
     {
-        public const int ListAddClient = 1;
-        public const int ListRemoveClient = 2;
+        public const byte ListAddClient = 1;
+        public const byte ListRemoveClient = 2;
         public const byte BuggyConnect = 6;
         public const byte BuggyConnectResponse = 7;
+        public const byte AddNewClient = 14;
+        public const byte RemoveClient = 15;
     }
 
 

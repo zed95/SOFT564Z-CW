@@ -14,3 +14,4 @@ void ConnectToServer();
 void SetupListener();
 void SendWiFi(WiFiClient Client, byte *request, int requestSize);
 int ReceiveWiFi(WiFiClient Client);
+void ListenForConnections();

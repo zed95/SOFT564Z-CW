@@ -65,6 +65,10 @@ void ConnectToServer() {
 void SetupListener() {
   listener.begin();
 
+  ListenForConnections();
+}
+
+void ListenForConnections() {
   while (1) {
     controllerClient = listener.available();
     if (controllerClient) {
@@ -110,7 +114,7 @@ int ReceiveWiFi(WiFiClient Client) {
           }
           break;
         case MOVE_BUGGY:
-          if (wifiBytesInQueue >= 2) {                                                            
+          if (wifiBytesInQueue >= 2) {
             xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
             RemoveQueue(&wifiByteBuffer[0], wifiOldestByte, wifiBytesInQueue, &dataBuffer[0], 2);
             AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &dataBuffer[0], 2);
@@ -146,5 +150,9 @@ int ReceiveWiFi(WiFiClient Client) {
           break;
       }
     }
+  }
+  else {
+    Client.stop();
+    ListenForConnections();
   }
 }

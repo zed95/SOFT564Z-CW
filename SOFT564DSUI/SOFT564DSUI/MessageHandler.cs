@@ -71,7 +71,7 @@ namespace SOFT564DSUI
                             newClient = true;
                             break;
                         case RequestTypes.ListRemoveClient:
-                            clientManager.clientID = BitConverter.ToInt32(request, 2);
+                            clientManager.clientID = BitConverter.ToInt32(request, 1);
 
                             clientManager.RemoveClient();
                             removeClient = true;

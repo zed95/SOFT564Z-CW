@@ -23,6 +23,9 @@ namespace ProxyServer
         static public int i = 0;
         static Thread RequestHandlerThread = new Thread(RequestHandler.HandleRequest);
 
+        public static Queue<Socket> SocketQueue = new Queue<Socket>();
+        public static Mutex SocketQueueMutex = new Mutex();
+
 
 
         static public void initServer()
@@ -58,13 +61,27 @@ namespace ProxyServer
 
         public static void AcceptConnectionCallback(IAsyncResult asyncResult)
         {
-            Socket newClientSocket = listenerSocket.EndAccept(asyncResult);   //accept communication and create a new socket to handle communication with the new client
-            Console.WriteLine("New client connected: " + newClientSocket.RemoteEndPoint);
-            clientManager.AddClient(newClientSocket);   //create a client object the handle transcieving of data for the newly connected client.
+            //Socket newClientSocket = listenerSocket.EndAccept(asyncResult);   //accept communication and create a new socket to handle communication with the new client
+            //Console.WriteLine("New client connected: " + newClientSocket.RemoteEndPoint);
+            //clientManager.AddClient(newClientSocket);   //create a client object the handle transcieving of data for the newly connected client.
 
-            int count = clientManager.Clients.Count;
-            Console.WriteLine(count);
+            //int count = clientManager.Clients.Count;
+            //Console.WriteLine(count);
             //clientManager.Clients[count - 1].NewClientSend();
+
+            //listenerSocket.BeginAccept(AcceptConnectionCallback, listenerSocket);   //start accepting new incoming connections again.
+
+
+
+
+            Socket newClientSocket = listenerSocket.EndAccept(asyncResult);   //accept communication and create a new socket to handle communication with the new client
+            SocketQueueMutex.WaitOne();
+            SocketQueue.Enqueue(newClientSocket);
+            SocketQueueMutex.ReleaseMutex();
+
+            RequestHandler.RequestQueueMutex.WaitOne();
+            RequestHandler.RequestQueue.Enqueue(BitConverter.GetBytes(RequestTypes.AddNewClient));
+            RequestHandler.RequestQueueMutex.ReleaseMutex();
 
             listenerSocket.BeginAccept(AcceptConnectionCallback, listenerSocket);   //start accepting new incoming connections again.
 
@@ -200,7 +217,7 @@ namespace ProxyServer
         }
 
         //Converts IP address from string format to long;
-        static private long IPtoLong(String addressIP)
+        static public long IPtoLong(String addressIP)
         {
             String number = "";
             long longIpAddress = 0;
@@ -236,7 +253,8 @@ namespace ProxyServer
         public static void AddClient(Socket socket)
         {
             Clients.Add(new Client(socket, AssignID()));                            //Add newly connected client to the list of clients
-            Server.sendAllClients((Byte)1, Clients[Clients.Count - 1]);             //Send data about the newly connected client to all other connected clients.
+            //Server.sendAllClients((Byte)1, Clients[Clients.Count - 1]);             //Send data about the newly connected client to all other connected clients.
+            RequestHandler.ListAddClient(Clients[Clients.Count - 1]);
 
         }
 
@@ -247,7 +265,8 @@ namespace ProxyServer
             {
                 removedClient = Clients.Find(DisconnectedClient => DisconnectedClient.clientID == id);  //extract info of the client to remove in order to tell other clients to remove the client from their list.
                 Clients.RemoveAt(Clients.FindIndex(x => x.clientID == id));                             //Remove the client from the list
-                Server.sendAllClients((Byte)2, removedClient);                                          //Update all the clients connected that the client has been removoed.
+                //Server.sendAllClients((Byte)2, removedClient);                                          //Update all the clients connected that the client has been removoed.
+                RequestHandler.ListRemoveClient(removedClient);
                 //change the request type numbers into meaningful constants.
             }
         }
@@ -276,6 +295,7 @@ namespace ProxyServer
         public byte[] callbackBuffer;
         private Byte[] unqueuedBytesBuffer = new byte[0];
         public bool inUse;
+        public int connectedToBuggy;
 
         public Client(Socket socket, int id)
         {
@@ -283,6 +303,7 @@ namespace ProxyServer
             clientID = id;
             callbackBuffer = new byte[1024];
             inUse = false;
+            connectedToBuggy = -1;
 
             clientReceive();
         }
@@ -386,7 +407,7 @@ namespace ProxyServer
             catch(Exception e)  //In the case of a disconnection, remove the disconnected client and update controller clients
             {
                 Console.WriteLine("ReceiveCallback");
-                clientManager.RemoveClient(clientID);
+                RequestHandler.RemoveClient(clientID);
             }
         }
 
@@ -400,7 +421,7 @@ namespace ProxyServer
         //callback function when data was sent.
         public void SendCallback(IAsyncResult asyncResult)
         {
-            int sent = clientSocket.EndSend(asyncResult);
+            //int sent = clientSocket.EndSend(asyncResult);
             //if(sent > 0)
             //{
             //    Console.WriteLine("Client Sent Bytes");
