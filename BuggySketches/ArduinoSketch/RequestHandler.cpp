@@ -1,6 +1,7 @@
 #include "RequestHandler.h"
 #include "Motor.h"
 #include "MySerial.h"
+#include "AutonomousMode.h"
 
 byte requestQueue[queueSize];
 byte handlerRequestArray[queueSize];
@@ -8,6 +9,7 @@ int rhOldestByte = 0;
 int rhNewestByte = 0;
 int rhBytesInQueue = 0; //used to check whether queue is full or empty.
 int pendingRequestData = 0;
+byte interactionMode = 0;
 
 void HandleRequest() {
   byte requestArray[queueSize];
@@ -20,7 +22,7 @@ void HandleRequest() {
         break;
       case INTERACTION_MODE:
           RemoveQueue(&requestQueue[0], rhOldestByte, rhBytesInQueue, &requestArray[0], 2);
-          //Add Function
+          InteractionMode(&requestArray[0]);
         break;
       case CURR_CONFIG_PARAM:
         RemoveQueue(&requestQueue[0], rhOldestByte, rhBytesInQueue, &requestArray[0], 2);
@@ -163,13 +165,13 @@ void CurrConfigParam(byte *byteArray) {
 
   switch (*(byteArray + 1)) {
     case MAX_OBJECT_DISTANCE:
-      //SendCurrConfig(maxObjectDistance);
+      SendCurrConfig(maxObjectDistance);
       break;
     case BUGGY_SPEED:
       SendCurrConfig(buggySpeed);
       break;
     case LIGHT_INTENSITY_DELTA:
-      //SendCurrConfig(lightIntensityDelta);
+      SendCurrConfig(minLightIntensityDelta);
       break;
     default:
       break;
@@ -198,16 +200,16 @@ void SendCurrConfig(uint32_t parameter) {
 void UpdateConfigOption(byte *byteArray) {
   switch (*(byteArray + 1)) {
     case MAX_OBJECT_DISTANCE:
-      //change max distance to object
-      //ConfigUpdateStatus(CONFIG_UPDATE_STATUS_OK);
+      maxObjectDistance = ToInt(&byteArray[2]);
+      ConfigUpdateStatus(CONFIG_UPDATE_STATUS_OK);
       break;
     case BUGGY_SPEED:
       buggySpeed = ToInt(&byteArray[2]);
       ConfigUpdateStatus(CONFIG_UPDATE_STATUS_OK);
       break;
     case LIGHT_INTENSITY_DELTA:
-      //change light intensity delta
-      //ConfigUpdateStatus(CONFIG_UPDATE_STATUS_OK);
+      minLightIntensityDelta = ToInt(&byteArray[2]);
+      ConfigUpdateStatus(CONFIG_UPDATE_STATUS_OK);
       break;
     default:
       break;
@@ -231,4 +233,24 @@ void ConfigUpdateStatus(byte updateStatus) {
   byteBuffer[1] = updateStatus;
 
   SendSerial(&byteBuffer[0], 2);
+}
+
+void InteractionMode(byte *byteArray) {
+  switch (*(byteArray + 1)) {
+    case INTMODE_MANUAL:
+      interactionMode = INTMODE_MANUAL;
+      MStop();                                        //if the mode is not autonomous stop the buggy from moving
+      break;
+    case INTMODE_CONFIGURATION:
+      interactionMode = INTMODE_CONFIGURATION;
+      MStop();
+      break;
+    case INTMODE_AUTONOMOUS:
+      interactionMode = INTMODE_AUTONOMOUS;
+      break;
+    default:
+      interactionMode = INTMODE_MANUAL;
+      MStop();
+      break;
+  }
 }

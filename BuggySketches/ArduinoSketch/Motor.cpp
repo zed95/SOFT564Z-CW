@@ -12,9 +12,11 @@ void SetupMotor() {
   pinMode(LEFT_BRAKE, OUTPUT); 
 
   ultrasonicServo.attach(SERVO_PIN);
-  ultrasonicServo.write(90);  // set servo to mid-point
 }
 
+void MoveServo(int pos) {
+  ultrasonicServo.write(pos);  // set servo to mid-point
+}
 
 void MStop() {
   WriteRightMotor(FORWARD, 0, BRAKE_ON);

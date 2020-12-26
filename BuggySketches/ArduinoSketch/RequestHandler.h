@@ -8,6 +8,10 @@
 #define UPDATE_CONFIG_OPTION  12
 #define CONFIG_UPDATE_STATUS  13
 
+#define INTMODE_MANUAL        1
+#define INTMODE_CONFIGURATION 2
+#define INTMODE_AUTONOMOUS    3
+
 #define AUTONOMOUS_DATA_T     1
 #define MAX_OBJECT_DISTANCE   2
 #define BUGGY_SPEED           3
@@ -20,6 +24,7 @@ extern byte requestQueue[queueSize];
 extern int rhOldestByte;
 extern int rhNewestByte;
 extern int rhBytesInQueue; //used to check whether queue is full or empty.
+extern byte interactionMode;
 
 void HandleRequest();
 void AddQueue(byte *queue, int &newestByte, int &bytesInQueue, byte *srcArray, int nBytes);
@@ -31,3 +36,4 @@ void UpdateConfigOption(byte *byteArray);
 void CurrConfigParam(byte *byteArray);
 void SendCurrConfig(uint32_t parameter);
 void ConfigUpdateStatus(byte updateStatus);
+void InteractionMode(byte *byteArray);

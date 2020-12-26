@@ -13,6 +13,9 @@
 #define BRAKE_OFF     0
 
 #define SERVO_PIN     9
+#define STRAIGHT      90
+#define RIGHT         0
+#define LEFT          180 
 
 extern uint32_t buggySpeed;
 
@@ -29,3 +32,4 @@ void MReverseRight();
 void MReverseLeft();
 void WriteRightMotor(int dir, int spd, int brake);
 void WriteLeftMotor(int dir, int spd, int brake);
+void MoveServo(int pos);

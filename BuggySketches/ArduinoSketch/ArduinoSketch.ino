@@ -2,6 +2,7 @@
 #include "Motor.h"
 #include "MySerial.h"
 #include "Sensors.h"
+#include "AutonomousMode.h"
 
 void setup() {
   // put your setup code here, to run once:
@@ -15,6 +16,10 @@ void loop() {
   if(CheckSerial()) {
     ReceiveSerial();
     HandleRequest();
+  }
+
+  if(interactionMode == INTMODE_AUTONOMOUS) {
+    SelfDrive();
   }
 
 }

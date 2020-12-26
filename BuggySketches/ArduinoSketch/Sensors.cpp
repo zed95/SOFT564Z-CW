@@ -23,13 +23,17 @@ void readLDRValues(uint32_t &rightLDR, uint32_t &leftLDR) {
 
 void ReadUSSensor(uint32_t &distance) {
   long duration = 0;
-  
-  digitalWrite(US_TRIG_PIN, LOW);
-  delayMicroseconds(2);
-  digitalWrite(US_TRIG_PIN, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(US_TRIG_PIN, LOW);
+  long val = 0;
 
-  duration = pulseIn(US_ECHO_PIN, HIGH);
-  distance = duration * 0.034f/2;
+  for (int x = 0; x < 10; x++) {
+    digitalWrite(US_TRIG_PIN, LOW);
+    delayMicroseconds(2);
+    digitalWrite(US_TRIG_PIN, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(US_TRIG_PIN, LOW);
+
+    val = pulseIn(US_ECHO_PIN, HIGH);
+    duration += (val * 0.1);
+  }
+  distance = duration * 0.034f / 2;
 }
