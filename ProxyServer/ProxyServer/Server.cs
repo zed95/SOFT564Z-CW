@@ -384,6 +384,24 @@ namespace ProxyServer
                                     goto breakout;
                                 }
                                 break;
+                            case RequestTypes.BuggyDisconnect:
+                                if (bytesLeft >= 1)
+                                {
+                                    //Add sender ID to the request
+                                    byte[] byteBuff = new byte[5];
+                                    Buffer.BlockCopy(ExtractRequest(unqueuedBytesBuffer, 1), 0, byteBuff, 0, 1);
+                                    Buffer.BlockCopy(BitConverter.GetBytes(clientID), 0, byteBuff, 1, 4);           //Also pass the client id that sent the request
+
+                                    tempQueue.Enqueue(byteBuff);
+                                    bytesLeft -= 1;
+                                    Buffer.BlockCopy(unqueuedBytesBuffer, 1, unqueuedBytesBuffer, 0, bytesLeft);
+                                    Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
+                                }
+                                else
+                                {
+                                    goto breakout;
+                                }
+                                break;
                             default:
                                 break;
                         }

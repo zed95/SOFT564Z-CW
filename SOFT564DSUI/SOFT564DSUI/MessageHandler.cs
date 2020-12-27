@@ -92,6 +92,10 @@ namespace SOFT564DSUI
                         case RequestTypes.BuggyConnectResponse:
                             BuggyConnectResponse.response = request[1];
                             break;
+                        case RequestTypes.BuggyDisconnect:
+                            ConnectionManager.Connections[0].asyncSend(request);    //Notify the server that the controller client is giving up control of the buggy.
+                            ConnectionManager.Connections[1].DisconnectClient();    //Begin the process of disconnecting from the buggy.
+                        break;
                         case RequestTypes.MoveBuggy:
                             ConnectionManager.Connections[1].asyncSend(request);
                             break;
@@ -133,6 +137,22 @@ namespace SOFT564DSUI
             dataType.Add(VarTypes.typeInt32);
 
             requestByteArray = byteConverter(request, dataType, 5);
+
+            RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
+            MessageHandler.RequestQueue.Enqueue(requestByteArray);
+            RequestQueueMutex.ReleaseMutex();            //Release the mutex
+        }
+
+        static public void BuggyDisconnect()
+        {
+            List<object> request = new List<object>();
+            List<int> dataType = new List<int>();
+            byte[] requestByteArray = new byte[1];
+
+            request.Add(RequestTypes.BuggyDisconnect);
+            dataType.Add(VarTypes.typeByte);
+
+            requestByteArray = byteConverter(request, dataType, 1);
 
             RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
             MessageHandler.RequestQueue.Enqueue(requestByteArray);
@@ -320,13 +340,12 @@ namespace SOFT564DSUI
         public const byte MoveBuggy            = 5;
         public const byte BuggyConnect         = 6;
         public const byte BuggyConnectResponse = 7;
+        public const byte BuggyDisconnect      = 8;
         public const byte InteractionMode      = 9;
         public const byte CurrConfigParam      = 10;
         public const byte SendCurrConfig       = 11;
         public const byte UpdateConfigOption   = 12;
         public const byte ConfigUpdateStatus   = 13;
-
-
     }
 
     static class VarTypes
@@ -354,7 +373,10 @@ namespace SOFT564DSUI
 
         static public void StartMotorControl()
         {
-            MotorControlInput.Start();
+            if (!MotorControlInput.IsAlive)
+            {
+                MotorControlInput.Start();
+            }
         }
         
         static public void PauseMotorControl()

@@ -52,8 +52,6 @@ namespace SOFT564DSUI
 
 
 
-            
-
             //stream.Close();
             //client.Close();
             //Console.ReadKey();
@@ -240,7 +238,34 @@ namespace SOFT564DSUI
 
         private void BuggyDisconnectBtn_Click(object sender, EventArgs e)
         {
+            buggyDisconnectBtn.Enabled = false;
+            MessageHandler.BuggyDisconnect();
 
+            while (TCPClient.buggyConnected) { }
+
+            //Enable buggy connect button
+            buggyConnectBtn.Enabled = true;
+
+            //Disable buggy controls
+            comboBoxIntMode.Enabled = false;
+            comboBoxConfig.Enabled = false;
+            buttonForward.Enabled = false;
+            buttonReverse.Enabled = false;
+            buttonRight.Enabled = false;
+            buttonLeft.Enabled = false;
+            textBoxConfigStatus.Enabled = false;
+            textBoxCurrConfig.Enabled = false;
+            buttonConfigUpdate.Enabled = false;
+            comboBoxNewConfig.Enabled = false;
+            TempTextBox.Enabled = false;
+            HumTextBox.Enabled = false;
+            LIntTextBox.Enabled = false;
+            buttonReqData.Enabled = false;
+
+            //Pause the thread
+            BuggyMotorControl.PauseMotorControl();
+
+            textBoxBuggyConnectStatus.Text = "Disconnect Successful";
         }
 
         private void buggyConnectBtn_Click(object sender, EventArgs e)
@@ -264,6 +289,7 @@ namespace SOFT564DSUI
                         textBoxBuggyConnectStatus.Text = "Connected to buggy";
                         comboBoxIntMode.Enabled = true;
                         buggyConnectBtn.Enabled = false;
+                        buggyDisconnectBtn.Enabled = true; 
                         BuggyMotorControl.StartMotorControl();      //Start thread that will monitor motor control inputs if manual mode is on.
                         break;
                     case BuggyConnectResponse.BuggyInUse:

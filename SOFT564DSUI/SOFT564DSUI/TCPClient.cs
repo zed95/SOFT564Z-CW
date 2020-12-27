@@ -16,6 +16,7 @@ namespace SOFT564DSUI
         public static bool dataAvailable = false;
         public static bool ConnectionEstablished = false;
         public static bool ConnectionLost = false;
+        public static bool buggyConnected = false;
         public byte[] buffer = new byte[1460];
 
         static Thread RequestHandlerThread = new Thread(MessageHandler.HandleRequest);
@@ -80,7 +81,15 @@ namespace SOFT564DSUI
             if (Connections.Exists(ClientToRemove => ClientToRemove.connectionID == id))              //Prevent Multiple exceptions from calling for removal of the client by checking if client of such id exists
             {
                 Connections.RemoveAt(Connections.FindIndex(x => x.connectionID == id));               //Remove the client from the list
-                //change the request type numbers into meaningful constants.
+
+                if (id == 0)
+                {
+
+                }
+                else if (id == 1)
+                {
+                    TCPClient.buggyConnected = false;   //No Buggy Was connected
+                }
             }
         }
 
@@ -133,6 +142,15 @@ namespace SOFT564DSUI
             }
         }
 
+        public void DisconnectClient()
+        {
+            //Disable sends and receives to the socket and begin the disconnect process
+            socket.Shutdown(SocketShutdown.Both);
+            Console.WriteLine("DisconnectCallback");
+            socket.BeginDisconnect(true, DisconnectCallback, null);
+            Console.WriteLine("DisconnectCallback");
+        }
+
         private void ConnectionCallback(IAsyncResult asyncResult)
         {
             socket.EndConnect(asyncResult);     //stop requesting connection when connected;
@@ -140,6 +158,17 @@ namespace SOFT564DSUI
             socket.BeginReceive(callbackBuffer, 0, callbackBuffer.Length, SocketFlags.None, ReceiveCallback, null); //start listening for incoming data from the server.
         }
 
+        private void DisconnectCallback(IAsyncResult asyncResult)
+        {
+            Console.WriteLine("DisconnectCallback");
+            //complete the disconnect
+            socket.EndDisconnect(asyncResult);
+            Console.WriteLine("DisconnectCallback");
+            //remove the client from the client list
+            ConnectionManager.RemoveClient(connectionID);
+            socket.Close();
+            Console.WriteLine("DisconnectCallback");
+        }
 
         private void ReceiveCallback(IAsyncResult asyncResult)
         {
@@ -274,7 +303,14 @@ namespace SOFT564DSUI
             }
 
             //start waiting for bytes again. 
-            socket.BeginReceive(callbackBuffer, 0, callbackBuffer.Length, SocketFlags.None, ReceiveCallback, null);
+            try
+            {
+                socket.BeginReceive(callbackBuffer, 0, callbackBuffer.Length, SocketFlags.None, ReceiveCallback, null);
+            }
+            catch
+            {
+                Console.WriteLine("Begin Receive Exception");
+            }
         }
 
 

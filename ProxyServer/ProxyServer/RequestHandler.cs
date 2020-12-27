@@ -67,6 +67,9 @@ namespace ProxyServer
                     case RequestTypes.BuggyConnectResponse:
                         SendResponse(request);
                         break;
+                    case RequestTypes.BuggyDisconnect:
+                        BuggyDisconnect(BitConverter.ToInt32(request, 1));
+                        break;
                     case RequestTypes.AddNewClient:
                         AddNewClient();
                         break;
@@ -145,6 +148,21 @@ namespace ProxyServer
             RequestQueue.Enqueue(requestByteArray);
             RequestQueueMutex.ReleaseMutex();
 
+        }
+
+        static public void BuggyDisconnect(int senderID)
+        {
+            int controllerClientIndex;
+            int buggyID, buggyIndex;
+
+            //Find the buggy id controller client is connected to and the buggy's index in the client list
+            controllerClientIndex = clientManager.Clients.FindIndex(x => x.clientID == senderID);
+            buggyID = clientManager.Clients[controllerClientIndex].connectedToBuggy;
+            buggyIndex = clientManager.Clients.FindIndex(x => x.clientID == buggyID);
+
+            //clear the buggy id that the client was connected to and set the buggy use status to false
+            clientManager.Clients[controllerClientIndex].connectedToBuggy = -1;
+            clientManager.Clients[buggyIndex].inUse = false;
         }
 
         static public void SendResponse(byte[] request)
@@ -317,12 +335,13 @@ namespace ProxyServer
     //A class with a list of all possible request types.
     static class RequestTypes
     {
-        public const byte ListAddClient = 1;
-        public const byte ListRemoveClient = 2;
-        public const byte BuggyConnect = 6;
+        public const byte ListAddClient        = 1;
+        public const byte ListRemoveClient     = 2;
+        public const byte BuggyConnect         = 6;
         public const byte BuggyConnectResponse = 7;
-        public const byte AddNewClient = 14;
-        public const byte RemoveClient = 15;
+        public const byte BuggyDisconnect      = 8;
+        public const byte AddNewClient         = 14;
+        public const byte RemoveClient         = 15;
     }
 
 
