@@ -137,9 +137,9 @@ namespace SOFT564DSUI
 
         static public void BuggyConnect(int buggyID)
         {
-            List<object> request = new List<object>();
-            List<int> dataType = new List<int>();
-            byte[] requestByteArray = new byte[5];
+            List<object> request = new List<object>();                      //create a list that holds the reqquest data
+            List<int> dataType = new List<int>();                           //Create a list that holds data types
+            byte[] requestByteArray = new byte[5];                          //Create an array of required size for the request
 
             //Add data to the list and and the type of the data to another
             request.Add(RequestTypes.BuggyConnect);
@@ -148,7 +148,7 @@ namespace SOFT564DSUI
             request.Add(buggyID);
             dataType.Add(VarTypes.typeInt32);
 
-            //conver the data in the request list to a byte array
+            //conver the data in the request list to an array of bytes for transmission
             requestByteArray = byteConverter(request, dataType, 5);
 
             RequestQueueMutex.WaitOne();                                        //Wait for mutes
@@ -167,9 +167,9 @@ namespace SOFT564DSUI
 
             requestByteArray = byteConverter(request, dataType, 1);
 
-            RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
+            RequestQueueMutex.WaitOne();                 
             MessageHandler.RequestQueue.Enqueue(requestByteArray);
-            RequestQueueMutex.ReleaseMutex();            //Release the mutex
+            RequestQueueMutex.ReleaseMutex();            
         }
 
         static public void SendEnvData()
@@ -183,9 +183,9 @@ namespace SOFT564DSUI
 
             requestByteArray = byteConverter(request, dataType, 1);
 
-            RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
+            RequestQueueMutex.WaitOne();                 
             MessageHandler.RequestQueue.Enqueue(requestByteArray);
-            RequestQueueMutex.ReleaseMutex();            //Release the mutex
+            RequestQueueMutex.ReleaseMutex();            
         }
 
 
@@ -203,9 +203,9 @@ namespace SOFT564DSUI
 
             requestByteArray = byteConverter(request, dataType, 2);
 
-            RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
+            RequestQueueMutex.WaitOne();                 
             MessageHandler.RequestQueue.Enqueue(requestByteArray);
-            RequestQueueMutex.ReleaseMutex();            //Release the mutex
+            RequestQueueMutex.ReleaseMutex();            
         }
 
         static public void UpdateConfigOption(byte configurationOption, Int32 configurationParameter)
@@ -245,19 +245,21 @@ namespace SOFT564DSUI
 
             while (true)
             {
+                //wait until interaction mode is switched to manual.
                 while (BuggyMotorControl.pauseMotorControl) { };
 
+                //record buggy control key presses and releases
                 if (BuggyMotorControl.forward) { forwardL = 1; } else { forwardL = 0; }
                 if (BuggyMotorControl.reverse) { reverseL = 1; } else { reverseL = 0; }
                 if (BuggyMotorControl.right) { rightL = 1; } else { rightL = 0; }
                 if (BuggyMotorControl.left) { leftL = 1; } else { leftL = 0; }
 
+                //put the direction data together into one
                 direction = (byte)((leftL << 3) | (rightL << 2) | (reverseL << 1) | (forwardL << 0));
 
 
-
-                // 1111 = left, right, reverse, forward
-
+                //Combinations of the keys meaning
+                //1111 = left, right, reverse, forward
                 //0000      no motion
                 //0001      forward
                 //0010      reverse
@@ -274,6 +276,8 @@ namespace SOFT564DSUI
                 //1101      left right and forward = forward
                 //1110      left, right, reverse = reverse
                 //1111      no motion
+
+                //dont send another request to the buggy keys haven't changed so that queue is not filled with identical requests
                 if (BuggyMotorControl.previousState != direction)
                 {
                     request.Add(RequestTypes.MoveBuggy);
@@ -284,14 +288,16 @@ namespace SOFT564DSUI
 
                     requestByteArray = byteConverter(request, dataType, 2);
 
-                    RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
+                    RequestQueueMutex.WaitOne();                 
                     MessageHandler.RequestQueue.Enqueue(requestByteArray);
-                    RequestQueueMutex.ReleaseMutex();            //Release the mutex
+                    RequestQueueMutex.ReleaseMutex();            
 
+                    //clear the lists
                     request.Clear();
                     dataType.Clear();
                 }
 
+                //save the current state as previous state to compare against the key presses next time
                 BuggyMotorControl.previousState = direction;
             }
         }
@@ -310,9 +316,9 @@ namespace SOFT564DSUI
 
             requestByteArray = byteConverter(request, dataType, 2);
 
-            RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
+            RequestQueueMutex.WaitOne();                
             MessageHandler.RequestQueue.Enqueue(requestByteArray);
-            RequestQueueMutex.ReleaseMutex();            //Release the mutex
+            RequestQueueMutex.ReleaseMutex();      
         }
 
         static public byte[] byteConverter(List<object> request, List<int> dataTypes, int byteCount)
@@ -320,9 +326,12 @@ namespace SOFT564DSUI
             byte[] byteArray = new byte[byteCount];
             int offset = 0;
 
-            //Convert all datatypes to bytes and put into a byte array in preparation for transmission
+            //Convert all data in the request array into bytes. before the data can be converted from the object list, it needs to be cast to the appopriate datatype.
+            //This is the reason the dataTypes list exists. It holds the datatypes of the data that has been placed into the request list.
             for (int x = 0; x < request.Count; x++)
             {
+                //copy the data from the request array into to byteArray as bytes then increase the offset by the number of bytes that the data consisted of to allow the
+                //next piece of data from the request array to be copied into the byteArray without overwriting data that's already in there.
                 switch (dataTypes[x])
                 {
                     case VarTypes.typeByte:
@@ -343,7 +352,7 @@ namespace SOFT564DSUI
 
     }
 
-    //A class with a list of all possible request types.
+    //A class with a list of all possible request types that the controller client can take.
     static class RequestTypes
     {
         public const byte ListAddClient        = 1;
@@ -361,12 +370,14 @@ namespace SOFT564DSUI
         public const byte ConfigUpdateStatus   = 13;
     }
 
+    //a class of variable types used in the byte converter to convert request data into bytes
     static class VarTypes
     {
         public const int typeByte = 1;
         public const int typeInt32 = 2;
     }
 
+    //a class containing definitions of the available interaction modes 
     static class InteractionMode
     {
         public const byte Manual = 1;
@@ -374,16 +385,25 @@ namespace SOFT564DSUI
         public const byte Autonomous = 3;
     }
 
+    //A class containing buggy control related data and functions. 
     static class BuggyMotorControl
     {
+        //variables containing data about whether a buggy control key has been pressed or not
         public static bool forward = false;
         public static bool reverse = false;
         public static bool right = false;
         public static bool left = false;
+
+        //holds the previous combination of key presses usued to prevent identical control requests being sent to the buggy
         public static byte previousState = 0;
+
+        //thread used to periodically check and record the buggy control key presses and releases
         static Thread MotorControlInput = new Thread(MessageHandler.MotorControl);
+
+        //variable used to stop control requests being sent to the buggy when not in manual control mode
         public volatile static bool pauseMotorControl = true;
 
+        //Starts the thread that records the buggy control presses and releases
         static public void StartMotorControl()
         {
             if (!MotorControlInput.IsAlive)
@@ -392,11 +412,13 @@ namespace SOFT564DSUI
             }
         }
         
+        //stops the buggy control key presses/releases from being recorded
         static public void PauseMotorControl()
         {
             pauseMotorControl = true;
         }
 
+        //restarts the recording of buggy control key presses/releases
         static public void RestartMotorControl()
         {
             pauseMotorControl = false;
@@ -404,6 +426,7 @@ namespace SOFT564DSUI
 
     }
 
+    //a class containing definitions of the available configuration options
     static class ConfigurationOptions
     {
         public const byte AutonomousDataT     = 1;

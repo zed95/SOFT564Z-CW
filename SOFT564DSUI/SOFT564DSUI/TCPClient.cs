@@ -145,34 +145,40 @@ namespace SOFT564DSUI
         {
             //Disable sends and receives to the socket and begin the disconnect process
             socket.Shutdown(SocketShutdown.Both);
-            Console.WriteLine("DisconnectCallback");
             socket.BeginDisconnect(true, DisconnectCallback, null);
-            Console.WriteLine("DisconnectCallback");
         }
 
         private void ConnectionCallback(IAsyncResult asyncResult)
         {
-            socket.EndConnect(asyncResult);     //stop requesting connection when connected;
+            //stop requesting connection when connected;
+            socket.EndConnect(asyncResult);    
+            
             //Start listening for incoming bytes.
             socket.BeginReceive(callbackBuffer, 0, callbackBuffer.Length, SocketFlags.None, ReceiveCallback, null); //start listening for incoming data from the server.
         }
 
         private void DisconnectCallback(IAsyncResult asyncResult)
         {
-            Console.WriteLine("DisconnectCallback");
             //complete the disconnect
             socket.EndDisconnect(asyncResult);
-            Console.WriteLine("DisconnectCallback");
+
             //remove the client from the client list
             ConnectionManager.RemoveClient(connectionID);
             socket.Close();
-            Console.WriteLine("DisconnectCallback");
         }
 
         private void ReceiveCallback(IAsyncResult asyncResult)
         {
-            //Get the number of received bytes
-            int bytesReceived = socket.EndReceive(asyncResult);
+            int bytesReceived = 0;
+            //Try to get the number of bytes received
+            try
+            {
+                bytesReceived = socket.EndReceive(asyncResult);
+            }
+            catch
+            {
+                //if any exception happens here then get the client id and then write a function to deal witht he disconnection for the particular client
+            }
             int bytesLeft = bytesReceived + unqueuedBytesBuffer.Length; //the number of bytes is equal to the number of bytes that have not yet been processed + the number of new bytes that arrived.
             int copyOffset = unqueuedBytesBuffer.Length;        //new bytes to be copy at an offset of the of the old array before its size increases.
             Queue<Byte[]> tempQueue = new Queue<byte[]>();
@@ -180,8 +186,11 @@ namespace SOFT564DSUI
             //if bytes available then do something
             if (bytesReceived > 0)
             {
-                Array.Resize(ref unqueuedBytesBuffer, bytesLeft);   //new size of array = previous bytes in the array + bytes that arrived.
-                Buffer.BlockCopy(callbackBuffer, 0, unqueuedBytesBuffer, copyOffset, bytesReceived); //copy new bytes from callback buffer into the unqued bytes are for processing.
+                //new size of array = previous bytes in the array + bytes that arrived.
+                Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
+
+                //copy new bytes from callback buffer into the unqued bytes are for processing.
+                Buffer.BlockCopy(callbackBuffer, 0, unqueuedBytesBuffer, copyOffset, bytesReceived); 
                 Console.WriteLine("Number of bytes available: " + bytesLeft);
                 while (bytesLeft > 0)
                 {
@@ -189,14 +198,23 @@ namespace SOFT564DSUI
                     {
                         Console.WriteLine("unqueued buffer bytes: " + unqueuedBytesBuffer[x]);
                     }
+
+                    //place the request data into a temporary queue.
                     switch (unqueuedBytesBuffer[0])     //if the data sent does not match any request types the while loop freezes as nothing is currently done with that byte. Need to fix that.----------mkhn
                     {
-                        case RequestTypes.ListAddClient:
+                        case RequestTypes.ListAddClient:    //request identified as ListAddClient
                             if (bytesLeft >= 17)
                             {
+                                //place data into temporary queue
                                 tempQueue.Enqueue(ExtractRequest(unqueuedBytesBuffer, 17));
+
+                                //bytes left in the unqueued byte buffer is now equal itself minus the size of the request
                                 bytesLeft -= 17;
+
+                                //copy the data that has not been placed into the temporary queue into the same buffer but in the first position which in effect overwrites the data that has been placed into the temporary queue.
                                 Buffer.BlockCopy(unqueuedBytesBuffer, 17, unqueuedBytesBuffer, 0, bytesLeft);
+
+                                //resize the buffer to the new size that is equal to the number of bytes in the buffer.
                                 Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
                             }
                             else
@@ -215,7 +233,6 @@ namespace SOFT564DSUI
                             }
                             else
                             {
-                                //if the command is recognised but not all required bytes arrived then jump 'breakout' to continue with the code
                                 goto breakout;
                             }
                             break;
@@ -229,7 +246,6 @@ namespace SOFT564DSUI
                             }
                             else
                             {
-                                //if the command is recognised but not all required bytes arrived then jump 'breakout' to continue with the code
                                 goto breakout;
                             }
                             break;
@@ -243,7 +259,6 @@ namespace SOFT564DSUI
                             }
                             else
                             {
-                                //if the command is recognised but not all required bytes arrived then jump 'breakout' to continue with the code
                                 goto breakout;
                             }
                             break;
@@ -257,7 +272,6 @@ namespace SOFT564DSUI
                             }
                             else
                             {
-                                //if the command is recognised but not all required bytes arrived then jump 'breakout' to continue with the code
                                 goto breakout;
                             }
                             break;
@@ -271,20 +285,20 @@ namespace SOFT564DSUI
                             }
                             else
                             {
-                                //if the command is recognised but not all required bytes arrived then jump 'breakout' to continue with the code
                                 goto breakout;
                             }
                             break;
                         default:
-                            break;
-                    }
+                            //clear the buffer by ignoring the data that is in there and start recording data in the buffer from 0.
+                            Console.WriteLine("Unrecognised request, clearing buffer");
 
-                    /*
-                     * The weakpoint of this approach is that if there is more than 0 bytes in the buffer, the code will be stuck in the loop and won't let the program fetch more bytes.
-                     * The break statements in the switch break out of the switch statement and not the loop.
-                     * if I have a break outside of the switch it will breakout of the loop after one command in queued even though there may be more commands in the queue.
-                     */
-                     
+                            //ignore any bytes that are left in the buffer
+                            bytesLeft = 0;
+
+                            //resize the buffer to size 0
+                            Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
+                            break;
+                    }   
                 }
 
                 //if the command is recognised but not all required bytes arrived then jump to here to continue with the code
@@ -301,35 +315,39 @@ namespace SOFT564DSUI
                 MessageHandler.RequestQueueMutex.ReleaseMutex();            //Release the mutex
             }
 
-            //start waiting for bytes again. 
+            //try setting the client to asynchronously receive data again
             try
             {
                 socket.BeginReceive(callbackBuffer, 0, callbackBuffer.Length, SocketFlags.None, ReceiveCallback, null);
             }
             catch
-            {
+            {   //Failure means that there has been a disconnection or the client has been removed
                 Console.WriteLine("Begin Receive Exception");
             }
         }
 
-
+        //starts the transmission of data tot he specified endpoint
         public void asyncSend(byte[] buffer)
         {   
-            Console.WriteLine("Sending");
             socket.BeginSend(buffer, 0, buffer.Length, SocketFlags.None, SendCallback, socket);     //start the transmission process
         }
 
-        //asynchronous sending callback witht the result of the transmission attempt.
+        //asynchronous sending callback with the result of the transmission attempt.
         private void SendCallback(IAsyncResult asyncResult)
         {
-
+            //No need to actually do anything here as it is irrelevant to the controller client
         }
 
+        //Used the extract the request data from client buffers that hold request data from either the server or buggy.
         private Byte[] ExtractRequest(Byte[] bytes, int size)
         {
+            //create an array of size of the request
             Byte[] requestBytes = new byte[size];
 
+            //copy the bytes from the client buffer to the new array
             Buffer.BlockCopy(bytes, 0, requestBytes, 0, size);
+
+            //return the extracted request data
             return requestBytes;
         }
 
