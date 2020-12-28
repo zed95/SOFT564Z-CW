@@ -13,7 +13,6 @@ namespace SOFT564DSUI
 {
     class TCPClient
     {
-        public static bool dataAvailable = false;
         public static bool ConnectionEstablished = false;
         public static bool ConnectionLost = false;
         public static bool buggyConnected = false;

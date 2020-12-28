@@ -29,100 +29,111 @@ namespace SOFT564DSUI
             {
                 while (true)
                 {
-                    //Console.WriteLine("Request handler is requesting queue access");
-                    RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
-                    if (RequestQueue.Count > 0)
-                    {
-                        Console.WriteLine("Request handler has queue access");
+                    RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter. Only check if there is anything in the queue if handler has the mutex.
+                    if (RequestQueue.Count > 0)                  //if there are any requests in the queue
+                    {   
+                        //Create request data buffer with the same size as the next element to come out of the queue.
                         request = new byte[RequestQueue.Peek().Length];
-                        request = RequestQueue.Dequeue(); //Remove request data to the queue
-                        count = request.Length;         //Count the number of bytes in the messages buffer.
-                        Console.WriteLine("Request handler is releasing mutex");
-                        RequestQueueMutex.ReleaseMutex();            //Release the mutex
+
+                        //Remove request data to the queue
+                        request = RequestQueue.Dequeue();
+
+                        //Count the number of bytes in the request buffer.
+                        count = request.Length;
+                        
+                        //Release the mutex
+                        RequestQueueMutex.ReleaseMutex();            
                         break;
                     }
                     else
                     {
-                        RequestQueueMutex.ReleaseMutex();            //Release the mutex
+                        //Release the mutex
+                        RequestQueueMutex.ReleaseMutex();            
                     }
                 }
 
-
+                //*--* to delete after testing
                 for (int x = 0; x < request.Length; x++)
                 {
                     Console.WriteLine(request[x]);
                 }
                 Console.WriteLine("Number of bytes in buffer: " + count);
 
-
-                    //Turn the data back into appropriate format based on type of request.
-                    switch (request[0])
-                    {
-                        case RequestTypes.ListAddClient:
-                            clientManager.clientIPAddress = BitConverter.ToInt64(request, 1);
-                            clientManager.clientPort = BitConverter.ToInt32(request, 9);
-                            clientManager.clientID = BitConverter.ToInt32(request, 13);
-                            Console.WriteLine("Here");
-                            Console.WriteLine(clientManager.clientIPAddress);
-                            Console.WriteLine(clientManager.clientPort);
-                            Console.WriteLine(clientManager.clientID);
-
-                            clientManager.AddClient();
-                            newClient = true;
-                            break;
-                        case RequestTypes.ListRemoveClient:
-                            clientManager.clientID = BitConverter.ToInt32(request, 1);
-
-                            clientManager.RemoveClient();
-                            removeClient = true;
-                            break;
-                        case RequestTypes.SendEnvData:
-                            ConnectionManager.Connections[1].asyncSend(request);
-                            break;
-                        case RequestTypes.RecEnvData:
+                //Carry out the request
+                switch (request[0])
+                {
+                    case RequestTypes.ListAddClient:
+                        ListAddClient(request);
+                        break;
+                    case RequestTypes.ListRemoveClient:
+                        clientManager.clientID = BitConverter.ToInt32(request, 1);
+                        clientManager.RemoveClient();
+                        removeClient = true;
+                        break;
+                    case RequestTypes.SendEnvData:
+                        ConnectionManager.Connections[1].asyncSend(request);
+                        break;
+                    case RequestTypes.RecEnvData:
                         Console.WriteLine("Received env data");
-                            EnvData.temperature = BitConverter.ToInt16(request, 1);
-                            EnvData.TempToFloat();
-                            EnvData.humidity = request[3];
-                            EnvData.lIntensity = BitConverter.ToInt16(request, 4);
-                            break;
-                        case RequestTypes.BuggyConnect:
-                            ConnectionManager.Connections[0].asyncSend(request);
-                            break;
-                        case RequestTypes.BuggyConnectResponse:
-                            BuggyConnectResponse.response = request[1];
-                            break;
-                        case RequestTypes.BuggyDisconnect:
-                            ConnectionManager.Connections[0].asyncSend(request);    //Notify the server that the controller client is giving up control of the buggy.
-                            ConnectionManager.Connections[1].DisconnectClient();    //Begin the process of disconnecting from the buggy.
+                        EnvData.temperature = BitConverter.ToInt16(request, 1);
+                        EnvData.TempToFloat();
+                        EnvData.humidity = request[3];
+                        EnvData.lIntensity = BitConverter.ToInt16(request, 4);
                         break;
-                        case RequestTypes.MoveBuggy:
-                            ConnectionManager.Connections[1].asyncSend(request);
-                            break;
-                        case RequestTypes.InteractionMode:
-                            ConnectionManager.Connections[1].asyncSend(request);
-                            break;
-                        case RequestTypes.CurrConfigParam:
-                            ConnectionManager.Connections[1].asyncSend(request);
-                            break;
-                        case RequestTypes.SendCurrConfig:
-                            BuggyConfigurationData.currConfigParam = BitConverter.ToInt32(request, 1);
-                            break;
-                        case RequestTypes.UpdateConfigOption:
-                            ConnectionManager.Connections[1].asyncSend(request);
+                    case RequestTypes.BuggyConnect:
+                        ConnectionManager.Connections[0].asyncSend(request);
                         break;
-                        case RequestTypes.ConfigUpdateStatus:
-                            BuggyConfigurationData.configUpdateStatus = request[1];
-                            configStatusUpdate = true;
-                            break;
+                    case RequestTypes.BuggyConnectResponse:
+                        BuggyConnectResponse.response = request[1];
+                        break;
+                    case RequestTypes.BuggyDisconnect:
+                        ConnectionManager.Connections[0].asyncSend(request);    //Notify the server that the controller client is giving up control of the buggy.
+                        ConnectionManager.Connections[1].DisconnectClient();    //Begin the process of disconnecting from the buggy.
+                        break;
+                    case RequestTypes.MoveBuggy:
+                        ConnectionManager.Connections[1].asyncSend(request);
+                        break;
+                    case RequestTypes.InteractionMode:
+                        ConnectionManager.Connections[1].asyncSend(request);
+                        break;
+                    case RequestTypes.CurrConfigParam:
+                        ConnectionManager.Connections[1].asyncSend(request);
+                        break;
+                    case RequestTypes.SendCurrConfig:
+                        BuggyConfigurationData.currConfigParam = BitConverter.ToInt32(request, 1);
+                        break;
+                    case RequestTypes.UpdateConfigOption:
+                        ConnectionManager.Connections[1].asyncSend(request);
+                        break;
+                    case RequestTypes.ConfigUpdateStatus:
+                        BuggyConfigurationData.configUpdateStatus = request[1];
+                        configStatusUpdate = true;
+                        break;
                     default:
 
-                            break;
-                    }
+                        break;
+                }
 
             }
         }
 
+        static public void ListAddClient(byte[] request)
+        {
+            //Convert the data in the request to actual ip address, port and client id.
+            clientManager.clientIPAddress = BitConverter.ToInt64(request, 1);
+            clientManager.clientPort = BitConverter.ToInt32(request, 9);
+            clientManager.clientID = BitConverter.ToInt32(request, 13);
+
+            //*--* to delete after testing
+            Console.WriteLine("Here");
+            Console.WriteLine(clientManager.clientIPAddress);
+            Console.WriteLine(clientManager.clientPort);
+            Console.WriteLine(clientManager.clientID);
+
+            //call the function to add the client to the list witht he converted data.
+            clientManager.AddClient();
+            newClient = true;
+        }
 
         static public void BuggyConnect(int buggyID)
         {
@@ -130,17 +141,19 @@ namespace SOFT564DSUI
             List<int> dataType = new List<int>();
             byte[] requestByteArray = new byte[5];
 
+            //Add data to the list and and the type of the data to another
             request.Add(RequestTypes.BuggyConnect);
             dataType.Add(VarTypes.typeByte);
 
             request.Add(buggyID);
             dataType.Add(VarTypes.typeInt32);
 
+            //conver the data in the request list to a byte array
             requestByteArray = byteConverter(request, dataType, 5);
 
-            RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
-            MessageHandler.RequestQueue.Enqueue(requestByteArray);
-            RequestQueueMutex.ReleaseMutex();            //Release the mutex
+            RequestQueueMutex.WaitOne();                                        //Wait for mutes
+            MessageHandler.RequestQueue.Enqueue(requestByteArray);              //Add the data to request arrary
+            RequestQueueMutex.ReleaseMutex();                                   //Release the mutex
         }
 
         static public void BuggyDisconnect()

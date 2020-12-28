@@ -17,11 +17,12 @@ namespace SOFT564DSUI
 {
     public partial class ClientGUI : Form
     {
-        static int x = 1;
-        Thread grabData;
+        Thread updateGUI;
         public ClientGUI()
         {
             InitializeComponent();
+
+            //At the beginning keep these GUI objects disabled
             buggyConnectBtn.Enabled = false;
             buggyDisconnectBtn.Enabled = false;
             textBoxBuggyConnectStatus.Enabled = false;
@@ -41,35 +42,29 @@ namespace SOFT564DSUI
             LIntTextBox.Enabled = false;
             buttonReqData.Enabled = false;
 
+            //Add interaction mode options to the combo box
             comboBoxIntMode.Items.Add("Manual");
             comboBoxIntMode.Items.Add("Autonomous");
             comboBoxIntMode.Items.Add("Configuration");
 
-            comboBoxConfig.Items.Add("Autonomous Data T (ms)");          //sets the period data requests in autonomous mode.
-            comboBoxConfig.Items.Add("Max Object Distance (cm)");        //Sets the closest distance that the buggy can be from object before it stops.
+            //Add configuration options to the combo box
+            comboBoxConfig.Items.Add("Autonomous Data T (ms)");     //sets the period data requests in autonomous mode.
+            comboBoxConfig.Items.Add("Max Object Distance (cm)");   //Sets the closest distance that the buggy can be from object before it stops.
             comboBoxConfig.Items.Add("Buggy Speed");                //Changes Buggy speed.
             comboBoxConfig.Items.Add("Light Intensity Delta");      //used to set the difference in light levels which determines wheter the buggy should turn in autonomous mode.
 
-
-
-            //stream.Close();
-            //client.Close();
-            //Console.ReadKey();
-
         }
 
-        public void callDisplay()
+        public void UpdateGUI()
         {
-            String Message;
-            bool remove = true;
             while(true) {
 
-
+                //Adds the new client to the GUI listbox list if there are less clients in the gui list box than there are in the connectedclient list.
                 if (listBox1.Items.Count < clientManager.Clients.Count)
                 {
-                    foreach (ConnectedClients client in clientManager.Clients)
+                    foreach (ConnectedClients client in clientManager.Clients)  //iterate through is client in the list
                     {
-                        if (listBox1.FindStringExact(client.clientID.ToString()) == -1) //if there any client in the connectedclient list that isn't on the list then add it.
+                        if (listBox1.FindStringExact(client.clientID.ToString()) == -1) //if there is any client in the connectedclient list that isn't on the list then add it.
                         {
                             listBox1.Invoke((MethodInvoker)(() => listBox1.Items.Add(client.clientID)));    //Add client to the list of available clients.
                         }
@@ -77,22 +72,21 @@ namespace SOFT564DSUI
                 }
 
 
+                //Removes a specific client from the GUI listbox if there are more clients in the GUI listbox than there are in the connectedclient list
                 if (listBox1.Items.Count > clientManager.Clients.Count)
                 {
-                    for (int xx = 0; xx < listBox1.Items.Count; xx++)
+                    for (int xx = 0; xx < listBox1.Items.Count; xx++)   //iterate through every client in the GUI listbox
                     {
-                        Console.WriteLine("Listbox Counter: " + listBox1.Items.Count);
-                        Console.WriteLine("Loop Increment : " + xx);
-                        if (!clientManager.Clients.Exists(connectedClient => connectedClient.clientID == Convert.ToInt32(listBox1.Items[xx])))  //If client id on the list does not belong to any clients in the connected client list remove it from the list.
+                        if (!clientManager.Clients.Exists(connectedClient => connectedClient.clientID == Convert.ToInt32(listBox1.Items[xx])))  //If client id on the GUI list does not belong to any clients in the connected client list remove it from the list.
                         {
                             listBox1.Invoke((MethodInvoker)(() => listBox1.Items.RemoveAt(xx)));    //Remove the client from the available client list.
-                            xx--;   //push the counter back once so that all items on the list are compared against the connected clients list. The list ios rearranged after removal of an item.
-                            remove = false;
+                            xx--;   //push the counter back once so that all items on the list are compared against the connected clients list. The list is rearranged after removal of an item.
                         }
 
                     }
                 }
 
+                //If any of the values that were received from the buggy differ from the old readings displayed then update the readings.
                 if((float.Parse(TempTextBox.Text) != EnvData.ftemperature) || (Int32.Parse(HumTextBox.Text) != EnvData.humidity) || (Int32.Parse(LIntTextBox.Text) != EnvData.lIntensity))
                 {
                     TempTextBox.Invoke((MethodInvoker)(() => TempTextBox.Text = EnvData.ftemperature.ToString()));
@@ -101,23 +95,25 @@ namespace SOFT564DSUI
                 }
 
 
-                if (TCPClient.dataAvailable)
-                {
-                    TCPClient.dataAvailable = false;
-                }
+                
                 if(!TCPClient.ConnectionLost)
                 {
                     connectToServerBtn.Invoke((MethodInvoker)(() => connectToServerBtn.Enabled = false));
                 }
-                if((TCPClient.ConnectionLost) && (connectToServerBtn.IsHandleCreated))
+
+                //If connection with the server has been lost at any point then enable the server connect button to allow the controller client to reconnect.
+                //Also update the messaged to notify the user what happened witht he server connection.
+                if ((TCPClient.ConnectionLost) && (connectToServerBtn.IsHandleCreated))
                 {
                     connectToServerBtn.Invoke((MethodInvoker)(() => connectToServerBtn.Enabled = true));
                     statusTB.Invoke((MethodInvoker)(() => statusTB.Text = "Disconnected"));
                     Thread.CurrentThread.Abort();
                 }
 
+                //Update the current configuration parameter value in the textbox
                 textBoxCurrConfig.Invoke((MethodInvoker)(() => textBoxCurrConfig.Text = BuggyConfigurationData.currConfigParam.ToString()));
 
+                //If the buggy has been configured, display "OK" message in the configuration status textbox
                 if(MessageHandler.configStatusUpdate)
                 {
                     if (BuggyConfigurationData.configUpdateStatus == 1)
@@ -133,24 +129,10 @@ namespace SOFT564DSUI
 
         }
 
-        private void textBox1_TextChanged(object sender, EventArgs e)
-        {
-            
-        }
-
-        private void textBox2_TextChanged(object sender, EventArgs e)
-        {
-           
-        }
-
-        private void SendButton_Click(object sender, EventArgs e)
-        {
-            String id = listBox1.GetItemText(listBox1.SelectedItem);
-            //TCPClient.send(textBox1.Text, id);
-        }
-
+        //function that runs when a key has been pressed
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
+            //if in manual interaction mode, record states of the following key presses.
             if (!BuggyMotorControl.pauseMotorControl)
             {
                 if (e.KeyCode == Keys.W)
@@ -172,9 +154,10 @@ namespace SOFT564DSUI
             }
         }
 
+        //function that runs when a key has been released
         private void Form1_KeyUp(object sender, KeyEventArgs e)
         {
-
+            //if in manual interaction mode, record states of the following key releases.
             if (!BuggyMotorControl.pauseMotorControl)
             {
                 if (e.KeyCode == Keys.W)
@@ -199,10 +182,17 @@ namespace SOFT564DSUI
 
         private void connectToServerBtn_Click(object sender, EventArgs e)
         {
+            //Disable connect to server button to prevent multiple connection requets.
             connectToServerBtn.Enabled = false;
+
+            //Connection lost status flag set to disabled as connection request begins.
             TCPClient.ConnectionLost = false;
-            Int32 port = Int32.Parse(portTB.Text);
-            TCPClient.initClient(ipAddressTB.Text, port);
+
+            //Attempt to connect to server with the ip address and port from the textboxes ip address and port textboxes
+            TCPClient.initClient(ipAddressTB.Text, Int32.Parse(portTB.Text));
+
+
+            //If failed to establish connection then enable connect button and display status otherwise:
             if (!TCPClient.ConnectionEstablished)
             {
                 connectToServerBtn.Enabled = true;
@@ -210,23 +200,25 @@ namespace SOFT564DSUI
             }
             else if(TCPClient.ConnectionEstablished)
             {
+                //Keep connect button disabled and display connection status
                 connectToServerBtn.Enabled = false;
                 statusTB.Text = "Connected";
 
-                //enable appropriate gui units
+                //enable appropriate GUI objects
                 buggyConnectBtn.Enabled = true;
                 textBoxBuggyConnectStatus.Enabled = true;
 
-                grabData = new Thread(callDisplay);
-                grabData.Start();
+                //Start thread that will keep the GUI updated with information
+                updateGUI = new Thread(UpdateGUI);
+                updateGUI.Start();
             }
 
         }
 
         private void portTB_TextChanged(object sender, EventArgs e)
         {
-            
-             if(Regex.IsMatch(portTB.Text, @"[a-zA-Z!@#$%^&£*(),.?:{ }|<> _ +=[\]\""\;\'\~\¬\-`\\/]")) //if input box has any of these, disable connection button
+            //if input box has any of these, disable connection button
+            if (Regex.IsMatch(portTB.Text, @"[a-zA-Z!@#$%^&£*(),.?:{ }|<> _ +=[\]\""\;\'\~\¬\-`\\/]")) 
             {
                 connectToServerBtn.Enabled = false;
             }
@@ -238,9 +230,13 @@ namespace SOFT564DSUI
 
         private void BuggyDisconnectBtn_Click(object sender, EventArgs e)
         {
+            //Disable button to prevent multiple disconnection requests.
             buggyDisconnectBtn.Enabled = false;
+
+            //Send message to server to notify that the controller client is disconnecting from the buggy and that it is available for connections again.
             MessageHandler.BuggyDisconnect();
 
+            //Wait until disconnection finishes before continuing with enabling/disabling buggy controls.
             while (TCPClient.buggyConnected) { }
 
             //Enable buggy connect button
@@ -262,51 +258,75 @@ namespace SOFT564DSUI
             LIntTextBox.Enabled = false;
             buttonReqData.Enabled = false;
 
-            //Pause the thread
+            //Don't record motor control inputs and don't send them to the buggy as requests
             BuggyMotorControl.PauseMotorControl();
 
+            //Display disconnection status.
             textBoxBuggyConnectStatus.Text = "Disconnect Successful";
         }
 
         private void buggyConnectBtn_Click(object sender, EventArgs e)
         {
             int index = 0;
-            if(listBox1.SelectedIndex == -1)
+
+            if(listBox1.SelectedIndex == -1)        //if no client was selected from the listbox
             {
                 textBoxBuggyConnectStatus.Text = "Select a client to connect to.";
             }
-            else
+            else                                    //client was selected
             {
-                MessageHandler.BuggyConnect(Convert.ToInt32(listBox1.SelectedItem));
+                //Disable button to prevent multiple requests from being made.
                 buggyConnectBtn.Enabled = false;
-                while (BuggyConnectResponse.response == 0) { };     //Wait for the response from the server
+
+                //Send request to server to ask for permission to connect to the selected buggy.
+                MessageHandler.BuggyConnect(Convert.ToInt32(listBox1.SelectedItem));
+
+                //Wait for the response from the server
+                while (BuggyConnectResponse.response == 0) { }     
 
                 switch (BuggyConnectResponse.response)
                 {
                     case BuggyConnectResponse.ConnectPermitted:
+                        //find the buggy connection infromation from the list by searching the list by client id and make a connection to the buggy.
                         index = clientManager.Clients.FindIndex(x => x.clientID == Convert.ToInt32(listBox1.SelectedItem));
                         ConnectionManager.AddClient(clientManager.Clients[index].ipAddress, 80);
+
+                        //display connection status of the buggy
                         textBoxBuggyConnectStatus.Text = "Connected to buggy";
-                        comboBoxIntMode.Enabled = true;
+
+                        /*
+                         * Disable appropriate controls so that the user cannot connect to other buggies while connected to one.
+                         * Enable appropriate buggy controls to allow the user to use the buggy.
+                         */
                         buggyConnectBtn.Enabled = false;
-                        buggyDisconnectBtn.Enabled = true; 
-                        BuggyMotorControl.StartMotorControl();      //Start thread that will monitor motor control inputs if manual mode is on.
+                        buggyDisconnectBtn.Enabled = true;
+                        comboBoxIntMode.Enabled = true;
+
+                        //Start thread that will monitor motor control inputs if manual mode is on.
+                        BuggyMotorControl.StartMotorControl();
                         break;
                     case BuggyConnectResponse.BuggyInUse:
                         textBoxBuggyConnectStatus.Text = "Buggy is used by another client";
                         buggyConnectBtn.Enabled = true;
                         break;
                     default:
-
+                        textBoxBuggyConnectStatus.Text = "Buggy is used by another client";
+                        buggyConnectBtn.Enabled = true;
                         break;
                 }
 
-                BuggyConnectResponse.response = 0;  //Reset The response
+                //Reset The response indicator
+                BuggyConnectResponse.response = 0;
             }
         }
 
         private void comboBoxIntMode_SelectedIndexChanged(object sender, EventArgs e)
         {
+            /*
+             * Enable or disable buggy controls based on the interaction mode selected.
+             * Set boolean that enables motor control values to be recorded in manual mode based on interaction mode.
+             * Send interaction mode request to the buggy.
+             */
             switch(comboBoxIntMode.SelectedItem.ToString())
             {
                 case "Manual":
@@ -381,6 +401,7 @@ namespace SOFT564DSUI
 
         private void buttonReqData_Click(object sender, EventArgs e)
         {
+            //if the button is clicked, send request to the buggy to send back sensor data
             MessageHandler.SendEnvData();
         }
 
@@ -412,7 +433,9 @@ namespace SOFT564DSUI
         private void comboBoxConfig_SelectedIndexChanged(object sender, EventArgs e)
         {
             comboBoxNewConfig.Items.Clear();                    //new config option selected, clear out old options from the New combo box.
-                    
+            
+            //Add configuration options into the new ComboBox based on the selected option in the Config ComboBox.
+            //Also sends a request to get the current data for the slected configuration option from the buggy.
             switch (comboBoxConfig.SelectedItem.ToString())
             {
                 case "Autonomous Data T (ms)":
@@ -453,10 +476,12 @@ namespace SOFT564DSUI
             }
         }
 
+        //Sends a request to update the buggy with the new parameter for the selected option. 
         private void buttonConfigUpdate_Click(object sender, EventArgs e)
         {
-            textBoxConfigStatus.Clear();    //Clears the textbox
+            textBoxConfigStatus.Clear();    //Clears the config status textbox to get it ready to display new update status
 
+            //Send a request based on the selected configuration option
             switch (comboBoxConfig.SelectedItem.ToString())
             {
                 case "Autonomous Data T (ms)":
