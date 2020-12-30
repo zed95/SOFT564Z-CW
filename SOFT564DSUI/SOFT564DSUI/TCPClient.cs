@@ -13,32 +13,13 @@ namespace SOFT564DSUI
 {
     class TCPClient
     {
-        public static bool ConnectionEstablished = false;
-        public static bool ConnectionLost = false;
-        public static bool buggyConnected = false;
-        public byte[] buffer = new byte[1460];
-
-        static Thread RequestHandlerThread = new Thread(MessageHandler.HandleRequest);
-
-        static public void initClient(String serverIP, Int32 port)
+        static public void ConnectToServer(String serverIP, Int32 port)
         {
-            try
-            {
-                if (!RequestHandlerThread.IsAlive)
-                {
-                    RequestHandlerThread.Start();
-                }
-                ConnectionManager.AddClient(IPtoLong(serverIP), port);
-
-                ConnectionEstablished = true;
-            }   
-              catch(Exception e)
-             {
-                ConnectionEstablished = false;
-             }
+                //add server to the list of connections
+                ConnectionManager.AddServer(IPtoLong(serverIP), port);
         }
 
-
+        //Used to convert the ip address string to a long
         static private long IPtoLong(String addressIP) {
             String number = "";
             long longIpAddress = 0;
@@ -49,45 +30,69 @@ namespace SOFT564DSUI
             {
                 if (addressIP[x] != 46) //if dot not encountered keep concatenating numbers if ip address for long parsing
                 {
+                    //extract ip number from the ip string
                     number = number + addressIP[x].ToString();
                 }
 
                 if(addressIP[x] == 46 || x == (addressIP.Length - 1))   //if dot encountered in string or end of ip string
                 {
+                    //convert the string to a number and shift to the left to create correct size and add the converted numbers together 
                     longIpAddress = longIpAddress + (long.Parse(number) << i);
+
+                    //Increase the shift to the left after each converted number to convert nect number to correct size
                     j++;
                     i = j * 8;
+
+                    //clear the number string for next string to be converted
                     number = "";
                 }
             }
 
+            //return converted ip address
             return longIpAddress;
         }
 
     }
 
+    //Stores the list of active connections
     static class ConnectionManager
     {
         public static List<ConnectionInstance> Connections = new List<ConnectionInstance>();
+        private const int serverID = 0;
+        public static bool ConnectionEstablished = false;
+        public static bool ServerConnectionResult = false;
+        public static bool ConnectionLost = false;
+        public static bool buggyConnected = false;
 
+        //Adds a buggy to the list of connections
         public static void AddClient(long ip, int port)
         {
             Connections.Add(new ConnectionInstance(ip, port, AssignID()));                            //Add new connection to the list
         }
 
+        //Adds server to the list of connections
+        public static void AddServer(long ip, int port)
+        {
+            Connections.Insert(0, new ConnectionInstance(ip, port, serverID));
+        }
+
+        //Removes specified client (buggy or server) from the list of connections
         public static void RemoveClient(int id)
         {
             if (Connections.Exists(ClientToRemove => ClientToRemove.connectionID == id))              //Prevent Multiple exceptions from calling for removal of the client by checking if client of such id exists
             {
                 Connections.RemoveAt(Connections.FindIndex(x => x.connectionID == id));               //Remove the client from the list
 
-                if (id == 0)
+                if (id == serverID)
                 {
+                   // ConnectionLost = true;
+                    // disconnect from the buggy on disconnection fromt he server
+
 
                 }
                 else if (id == 1)
                 {
-                    TCPClient.buggyConnected = false;   //No Buggy Was connected
+                   // buggyConnected = false;   //No Buggy Was connected
                 }
             }
         }
@@ -105,6 +110,54 @@ namespace SOFT564DSUI
             newID += Connections.Count;
 
             return newID;
+        }
+
+        static public void connectionStatus(int clientID, int status)
+        {
+            switch (clientID)
+            {
+                case 0:     //Server Connection
+                    switch(status)
+                    {
+                        case 0:     //Connection not established
+                            RemoveClient(clientID);
+                            ServerConnectionResult = true;
+                            ConnectionEstablished = false;
+                            break;
+                        case 1:     //Connection established
+                            ServerConnectionResult = true;
+                            ConnectionEstablished = true;
+                            break;
+                        case 2:     //Connection lost
+                            RemoveClient(clientID);
+                            ConnectionLost = true;
+                            clientManager.Clients.Clear();
+                            break;
+                        default:
+
+                            break;
+                    }
+                    break;
+                case 1:     //Buggy Connection
+                    switch (status)
+                    {
+                        case 1:     //Connection established
+                            buggyConnected = true;   //No Buggy Was connected
+                            break;
+                        case 2:     //Connection lost
+                            buggyConnected = false;   //No Buggy Was connected
+                            RemoveClient(clientID);
+                            break;
+                        default:
+
+                            break;
+                    }
+                    break;
+                default:    //undefined
+
+                    break;
+
+            }
         }
 
     }
@@ -143,18 +196,35 @@ namespace SOFT564DSUI
 
         public void DisconnectClient()
         {
-            //Disable sends and receives to the socket and begin the disconnect process
-            socket.Shutdown(SocketShutdown.Both);
-            socket.BeginDisconnect(true, DisconnectCallback, null);
+
+            try //attempt to disconnect
+            {
+                //Disable sends and receives to the socket and begin the disconnect process
+                socket.Shutdown(SocketShutdown.Both);
+                socket.BeginDisconnect(true, DisconnectCallback, null);
+            }
+            catch (Exception e) //attempt unsuccessful
+            {   
+                Console.WriteLine(e);
+            }
         }
 
         private void ConnectionCallback(IAsyncResult asyncResult)
         {
-            //stop requesting connection when connected;
-            socket.EndConnect(asyncResult);    
-            
-            //Start listening for incoming bytes.
-            socket.BeginReceive(callbackBuffer, 0, callbackBuffer.Length, SocketFlags.None, ReceiveCallback, null); //start listening for incoming data from the server.
+            try
+            {
+                //stop requesting connection when connected;
+                socket.EndConnect(asyncResult);
+                ConnectionManager.connectionStatus(connectionID, 1);
+                //Start listening for incoming bytes.
+                socket.BeginReceive(callbackBuffer, 0, callbackBuffer.Length, SocketFlags.None, ReceiveCallback, null); //start listening for incoming data from the server.
+            }
+            catch
+            {
+                //Set appropriate flags
+                ConnectionManager.connectionStatus(connectionID, 0);
+                ConnectionManager.RemoveClient(connectionID);
+            }
         }
 
         private void DisconnectCallback(IAsyncResult asyncResult)
@@ -162,8 +232,7 @@ namespace SOFT564DSUI
             //complete the disconnect
             socket.EndDisconnect(asyncResult);
 
-            //remove the client from the client list
-            ConnectionManager.RemoveClient(connectionID);
+            //close the socket connection
             socket.Close();
         }
 
@@ -323,6 +392,7 @@ namespace SOFT564DSUI
             catch
             {   //Failure means that there has been a disconnection or the client has been removed
                 Console.WriteLine("Begin Receive Exception");
+                ConnectionManager.connectionStatus(connectionID, 2);
             }
         }
 

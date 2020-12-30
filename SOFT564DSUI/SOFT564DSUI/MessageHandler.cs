@@ -19,6 +19,15 @@ namespace SOFT564DSUI
         static public bool removeClient = false;
         static public Queue<Byte[]> RequestQueue = new Queue<byte[]>();
         public static Mutex RequestQueueMutex = new Mutex();
+        static Thread RequestHandlerThread = new Thread(MessageHandler.HandleRequest);
+
+        static public void StartRequestHandlerThread()
+        {
+            if (!RequestHandlerThread.IsAlive)
+            {
+                RequestHandlerThread.Start();
+            }
+        }
 
         static public void HandleRequest()
         {

@@ -53,6 +53,8 @@ namespace SOFT564DSUI
             comboBoxConfig.Items.Add("Buggy Speed");                //Changes Buggy speed.
             comboBoxConfig.Items.Add("Light Intensity Delta");      //used to set the difference in light levels which determines wheter the buggy should turn in autonomous mode.
 
+            MessageHandler.StartRequestHandlerThread();
+
         }
 
         public void UpdateGUI()
@@ -96,17 +98,41 @@ namespace SOFT564DSUI
 
 
                 
-                if(!TCPClient.ConnectionLost)
+                if(!ConnectionManager.ConnectionLost)
                 {
                     connectToServerBtn.Invoke((MethodInvoker)(() => connectToServerBtn.Enabled = false));
                 }
 
                 //If connection with the server has been lost at any point then enable the server connect button to allow the controller client to reconnect.
                 //Also update the messaged to notify the user what happened witht he server connection.
-                if ((TCPClient.ConnectionLost) && (connectToServerBtn.IsHandleCreated))
+                if ((ConnectionManager.ConnectionLost) && (connectToServerBtn.IsHandleCreated))
                 {
+                    //Enable and Disable appropriate units
                     connectToServerBtn.Invoke((MethodInvoker)(() => connectToServerBtn.Enabled = true));
+                    buggyConnectBtn.Invoke((MethodInvoker)(() => buggyConnectBtn.Enabled = false));
+                    buggyDisconnectBtn.Invoke((MethodInvoker)(() => buggyDisconnectBtn.Enabled = false));
+                    textBoxBuggyConnectStatus.Invoke((MethodInvoker)(() => textBoxBuggyConnectStatus.Enabled = false));
+                    comboBoxIntMode.Invoke((MethodInvoker)(() => comboBoxIntMode.Enabled = false));
+                    comboBoxConfig.Invoke((MethodInvoker)(() => comboBoxConfig.Enabled = false));
+                    buttonForward.Invoke((MethodInvoker)(() => buttonForward.Enabled = false));
+                    buttonReverse.Invoke((MethodInvoker)(() => buttonReverse.Enabled = false));
+                    buttonRight.Invoke((MethodInvoker)(() => buttonRight.Enabled = false));
+                    buttonLeft.Invoke((MethodInvoker)(() => buttonLeft.Enabled = false));
+                    textBoxConfigStatus.Invoke((MethodInvoker)(() => textBoxConfigStatus.Enabled = false));
+                    textBoxCurrConfig.Invoke((MethodInvoker)(() => textBoxCurrConfig.Enabled = false));
+                    textBoxConfigStatus.Invoke((MethodInvoker)(() => textBoxConfigStatus.Enabled = false));
+                    buttonConfigUpdate.Invoke((MethodInvoker)(() => buttonConfigUpdate.Enabled = false));
+                    comboBoxNewConfig.Invoke((MethodInvoker)(() => comboBoxNewConfig.Enabled = false));
+                    TempTextBox.Invoke((MethodInvoker)(() => TempTextBox.Enabled = false));
+                    HumTextBox.Invoke((MethodInvoker)(() => HumTextBox.Enabled = false));
+                    LIntTextBox.Invoke((MethodInvoker)(() => LIntTextBox.Enabled = false));
+                    buttonReqData.Invoke((MethodInvoker)(() => buttonReqData.Enabled = false));
+
+                    listBox1.Invoke((MethodInvoker)(() => listBox1.Items.Clear()));
+
+                    //clear the connected client list on disconnection
                     statusTB.Invoke((MethodInvoker)(() => statusTB.Text = "Disconnected"));
+
                     Thread.CurrentThread.Abort();
                 }
 
@@ -124,6 +150,100 @@ namespace SOFT564DSUI
                 }
             }
         }
+
+        private bool CheckIPInput(String ipAddress)
+        {
+            String number = "";
+            long addressInt = 0;
+            int nOfDots = 0;
+            int nOfints = 0;
+            int nOfNumberChars = 0;
+            char previousChar = (char)0;
+            int i = 0;
+            int j = 0;
+
+            for (int x = 0; x < ipAddress.Length; x++)
+            {
+
+                //check if first and last chars are numbers
+                if ((ipAddress[0] < 48) || (ipAddress[0] > 57)) 
+                {
+                    goto IpaddressError;
+                }
+                else if ((ipAddress[ipAddress.Length -1] < 48) || (ipAddress[ipAddress.Length - 1] > 57)) {
+                    goto IpaddressError;
+                }
+
+                //If the value is either a . or number between 0 and 9 then continue
+                if ((ipAddress[x] == 46) || (ipAddress[x] >= 48 && ipAddress[x] <= 57)) {
+
+                    //Check the address contains more than one dot in a row
+                    if (previousChar == 46 && ipAddress[x] == 46)
+                    {
+                        goto IpaddressError;
+                    }
+                    else
+                    {
+                        previousChar = ipAddress[x];
+                    }
+
+                    if (ipAddress[x] != 46) //if dot not encountered keep concatenating numbers if ip address for long parsing
+                    {
+                        //extract ip number from the ip string
+                        number = number + ipAddress[x].ToString();
+                        nOfNumberChars++;
+
+                        //check if a number created for the ip address is too big
+                        if(nOfNumberChars > 3)
+                        {
+                            goto IpaddressError;
+                        }
+                    } 
+                    else
+                    {
+                        nOfDots++;
+                    }
+
+
+                    if (ipAddress[x] == 46 || x == (ipAddress.Length - 1))   //if dot encountered in string or end of ip string
+                    {
+                        //convert the string to a number and shift to the left to create correct size and add the converted numbers together 
+                        addressInt = int.Parse(number);
+
+                        if(addressInt < 0 || addressInt > 255)
+                        {
+                            goto IpaddressError;
+                        }
+
+                        nOfints++;
+
+                        //clear the number string for next string to be converted
+                        number = "";
+                        nOfNumberChars = 0;
+                    }
+                }
+                else
+                {
+                    goto IpaddressError;
+                }
+
+            }
+
+            //if more than 4 ints converted or more than 3 dots detected: error
+            if(nOfints > 4 || nOfDots > 3)
+            {
+                goto IpaddressError;
+            }
+
+            //No error detected
+            return true;
+
+
+        //Error was detected
+        IpaddressError:
+            return false;
+        }
+
         private void Form1_Load(object sender, EventArgs e)
         {
 
@@ -186,31 +306,42 @@ namespace SOFT564DSUI
             connectToServerBtn.Enabled = false;
 
             //Connection lost status flag set to disabled as connection request begins.
-            TCPClient.ConnectionLost = false;
+            ConnectionManager.ConnectionLost = false;
 
             //Attempt to connect to server with the ip address and port from the textboxes ip address and port textboxes
-            TCPClient.initClient(ipAddressTB.Text, Int32.Parse(portTB.Text));
-
-
-            //If failed to establish connection then enable connect button and display status otherwise:
-            if (!TCPClient.ConnectionEstablished)
+            if (CheckIPInput(ipAddressTB.Text))
             {
-                connectToServerBtn.Enabled = true;
-                statusTB.Text = "Failed To Connect";
+                TCPClient.ConnectToServer(ipAddressTB.Text, Int32.Parse(portTB.Text));
+
+                while(!ConnectionManager.ServerConnectionResult) { };
+
+                ConnectionManager.ServerConnectionResult = false;
+
+                //If failed to establish connection then enable connect button and display status otherwise:
+                if (!ConnectionManager.ConnectionEstablished)
+                {
+                    connectToServerBtn.Enabled = true;
+                    statusTB.Text = "Failed To Connect";
+                }
+                else if (ConnectionManager.ConnectionEstablished)
+                {
+                    //Keep connect button disabled and display connection status
+                    connectToServerBtn.Enabled = false;
+                    statusTB.Text = "Connected";
+
+                    //enable appropriate GUI objects
+                    buggyConnectBtn.Enabled = true;
+                    textBoxBuggyConnectStatus.Enabled = true;
+
+                    //Start thread that will keep the GUI updated with information
+                    updateGUI = new Thread(UpdateGUI);
+                    updateGUI.Start();
+                }
             }
-            else if(TCPClient.ConnectionEstablished)
+            else
             {
-                //Keep connect button disabled and display connection status
-                connectToServerBtn.Enabled = false;
-                statusTB.Text = "Connected";
-
-                //enable appropriate GUI objects
-                buggyConnectBtn.Enabled = true;
-                textBoxBuggyConnectStatus.Enabled = true;
-
-                //Start thread that will keep the GUI updated with information
-                updateGUI = new Thread(UpdateGUI);
-                updateGUI.Start();
+                statusTB.Text = "Invalid IP address";
+                connectToServerBtn.Enabled = true;
             }
 
         }
@@ -237,7 +368,7 @@ namespace SOFT564DSUI
             MessageHandler.BuggyDisconnect();
 
             //Wait until disconnection finishes before continuing with enabling/disabling buggy controls.
-            while (TCPClient.buggyConnected) { }
+            while (ConnectionManager.buggyConnected) { }
 
             //Enable buggy connect button
             buggyConnectBtn.Enabled = true;
