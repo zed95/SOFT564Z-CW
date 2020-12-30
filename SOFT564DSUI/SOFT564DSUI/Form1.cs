@@ -136,6 +136,34 @@ namespace SOFT564DSUI
                     Thread.CurrentThread.Abort();
                 }
 
+                if (ConnectionManager.BuggyConnectionResult)
+                {
+                    if (!ConnectionManager.buggyConnected)
+                    {
+                        buggyConnectBtn.Invoke((MethodInvoker)(() => buggyConnectBtn.Enabled = true));
+                        buggyDisconnectBtn.Invoke((MethodInvoker)(() => buggyDisconnectBtn.Enabled = false));
+                        textBoxBuggyConnectStatus.Invoke((MethodInvoker)(() => textBoxBuggyConnectStatus.Enabled = false));
+                        comboBoxIntMode.Invoke((MethodInvoker)(() => comboBoxIntMode.Enabled = false));
+                        comboBoxConfig.Invoke((MethodInvoker)(() => comboBoxConfig.Enabled = false));
+                        buttonForward.Invoke((MethodInvoker)(() => buttonForward.Enabled = false));
+                        buttonReverse.Invoke((MethodInvoker)(() => buttonReverse.Enabled = false));
+                        buttonRight.Invoke((MethodInvoker)(() => buttonRight.Enabled = false));
+                        buttonLeft.Invoke((MethodInvoker)(() => buttonLeft.Enabled = false));
+                        textBoxConfigStatus.Invoke((MethodInvoker)(() => textBoxConfigStatus.Enabled = false));
+                        textBoxCurrConfig.Invoke((MethodInvoker)(() => textBoxCurrConfig.Enabled = false));
+                        textBoxConfigStatus.Invoke((MethodInvoker)(() => textBoxConfigStatus.Enabled = false));
+                        buttonConfigUpdate.Invoke((MethodInvoker)(() => buttonConfigUpdate.Enabled = false));
+                        comboBoxNewConfig.Invoke((MethodInvoker)(() => comboBoxNewConfig.Enabled = false));
+                        TempTextBox.Invoke((MethodInvoker)(() => TempTextBox.Enabled = false));
+                        HumTextBox.Invoke((MethodInvoker)(() => HumTextBox.Enabled = false));
+                        LIntTextBox.Invoke((MethodInvoker)(() => LIntTextBox.Enabled = false));
+                        buttonReqData.Invoke((MethodInvoker)(() => buttonReqData.Enabled = false));
+
+                        textBoxBuggyConnectStatus.Invoke((MethodInvoker)(() => textBoxBuggyConnectStatus.Text = "Disconnected"));
+                    }
+                    ConnectionManager.BuggyConnectionResult = false;
+                }
+
                 //Update the current configuration parameter value in the textbox
                 textBoxCurrConfig.Invoke((MethodInvoker)(() => textBoxCurrConfig.Text = BuggyConfigurationData.currConfigParam.ToString()));
 
@@ -393,7 +421,7 @@ namespace SOFT564DSUI
             BuggyMotorControl.PauseMotorControl();
 
             //Display disconnection status.
-            textBoxBuggyConnectStatus.Text = "Disconnect Successful";
+            textBoxBuggyConnectStatus.Text = "Disconnected";
         }
 
         private void buggyConnectBtn_Click(object sender, EventArgs e)

@@ -122,6 +122,9 @@ namespace ProxyServer
             request.Add(RequestTypes.BuggyConnectResponse);
             dataType.Add(VarTypes.typeByte);
 
+            //check if buggy still exists in the list before checking if it is in use. send response and request to the controller client to delete it if it doesnt.
+            //if the buggy still exists, check the connection status by sending IsAlive request to it to see if exception occurs. if it does delete the buggy from the list and send response to the controller client
+            //if the buggy is connected see if it is free and give appropriate response.
 
             index = clientManager.Clients.FindIndex(x => x.clientID == buggyID);
             controllerClientIndex = clientManager.Clients.FindIndex(x => x.clientID == senderID);

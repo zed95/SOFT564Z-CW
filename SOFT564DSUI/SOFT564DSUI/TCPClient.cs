@@ -61,6 +61,7 @@ namespace SOFT564DSUI
         private const int serverID = 0;
         public static bool ConnectionEstablished = false;
         public static bool ServerConnectionResult = false;
+        public static bool BuggyConnectionResult = false;
         public static bool ConnectionLost = false;
         public static bool buggyConnected = false;
 
@@ -143,9 +144,11 @@ namespace SOFT564DSUI
                     {
                         case 1:     //Connection established
                             buggyConnected = true;   //No Buggy Was connected
+                            //BuggyConnectionResult = true;
                             break;
                         case 2:     //Connection lost
                             buggyConnected = false;   //No Buggy Was connected
+                            BuggyConnectionResult = true;
                             RemoveClient(clientID);
                             break;
                         default:

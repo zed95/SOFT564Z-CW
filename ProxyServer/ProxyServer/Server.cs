@@ -332,8 +332,6 @@ namespace ProxyServer
                     Array.Resize(ref unqueuedBytesBuffer, bytesLeft);   //new size of array = previous bytes in the array + bytes that arrived.
                     Buffer.BlockCopy(callbackBuffer, 0, unqueuedBytesBuffer, copyOffset, bytesReceived); //copy new bytes from callback buffer into the unqued bytes are for processing.
                     Console.WriteLine("Number of bytes available: " + bytesLeft);
-                    clientReceive();
-
                     //---
 
                     while (bytesLeft > 0)
@@ -419,7 +417,7 @@ namespace ProxyServer
                     }
                     RequestHandler.RequestQueueMutex.ReleaseMutex();            //Release the mutex
 
-
+                    clientReceive();
                 }
             }
             catch(Exception e)  //In the case of a disconnection, remove the disconnected client and update controller clients

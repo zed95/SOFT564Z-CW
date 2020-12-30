@@ -1,6 +1,8 @@
-
+//Defines
 #define LDR_PIN   36
-extern int dataExtractionPeriod;
+
+//Variables
+extern int dataExtractionPeriod;    //Used to set the autonomous data extraction task delay
 
 //Functions
 void SetupBME280();

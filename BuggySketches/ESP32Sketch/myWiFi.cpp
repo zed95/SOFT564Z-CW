@@ -11,10 +11,10 @@ WiFiClient controllerClient;        //instance that will connect with the contro
 const char* serverIP = "192.168.0.95";
 const int serverPort = 11000;
 
-byte wifiByteBuffer[1000];
-int wifiOldestByte = 0;
-int wifiNewestByte = 0;
-int wifiBytesInQueue = 0;
+byte wifiByteBuffer[1000];  //buffer that stores bytes received from the network
+int wifiOldestByte = 0;     //points to the first byte in the buffer
+int wifiNewestByte = 0;     //points to the next free space in the buffer
+int wifiBytesInQueue = 0;   //indicate the number of bytes currently in the buffer
 
 void SetupWiFi() {
   //Network ssid and password
@@ -42,7 +42,7 @@ void SetupWiFi() {
   //IPAddress dns2(192, 168, 0, 1);
   WiFi.config(myIP, gateway, subnet, dns1);
 
-  //Connect to WiFi
+  //Connect to WiFi network
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
@@ -54,7 +54,7 @@ void SetupWiFi() {
 }
 
 void ConnectToServer() {
-  // Connect to server
+  // Connect to server and getconnection status
   if (!serverClient.connect(serverIP, serverPort))
   {
     Serial.println("Failed to connect to server.");
@@ -62,39 +62,73 @@ void ConnectToServer() {
   Serial.println("Connected to server");
 }
 
-void SetupListener() {
-  listener.begin();
+void CheckConnections() {
+  byte intModeRequest[2] = {9, 1};
+  //clear the server client buffer so that correct representation of the connection status is given.
+  serverClient.flush();
+  //if connection with server is lost
+  if (!serverClient.connected()) {
 
-  ListenForConnections();
+    //request for the interaction mode to go into manual
+    if (interactionMode != INTMODE_MANUAL) {
+      xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
+      AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &intModeRequest[0], 2);
+      xSemaphoreGive(requestQueueMutex);
+    }
+    
+    //disconnect client controller if there is one connected to the buggy
+    if (controllerClient.connected()) {
+      //Disconnect controller client
+      DisconnectClient();
+    }
+    //Try reconnecting to server
+    ConnectToServer();
+
+  }
+  else if ((!controllerClient.connected()) && (serverClient.connected())) {
+    //request for the interaction mode to go into manual
+    if (interactionMode != INTMODE_MANUAL) {
+      xSemaphoreTake(requestQueueMutex, portMAX_DELAY);
+      AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &intModeRequest[0], 2);
+      xSemaphoreGive(requestQueueMutex);
+    }
+    ListenForConnections();     //listen for controller client connection attempts.
+  }
 }
 
+//Disconnects the connect controller client
+void DisconnectClient() {
+  controllerClient.stop();
+}
+
+//Begins listening for incoming controller client connections
+void SetupListener() {
+  listener.begin();
+}
+
+//Listen for controller client connection attempts
 void ListenForConnections() {
-  while (1) {
-    controllerClient = listener.available();
-    if (controllerClient) {
-      Serial.println("Controller Client Connected!");
-      break;
-    }
+  controllerClient = listener.available();
+  if (controllerClient) {
+    Serial.println("Controller Client Connected!");
   }
 }
 
 
 void SendWiFi(WiFiClient Client, byte *request, int requestSize) {
   //send a number of bytes specified by 'requestSize' starting at 'request' address
-  Serial.println("Send Curr Config 3");
   Client.write(request, requestSize * sizeof(byte));
 }
 
-//need to de
+
 int ReceiveWiFi(WiFiClient Client) {
   byte dataBuffer[1000];
   int byteCount = 0;
 
-  if (Client.connected()) {
-    while (Client.available() > 0) {                                              //read the data if any is available
-      //Add code to read in the data from the client
-      dataBuffer[byteCount] = Client.read();
-      byteCount++;                                                                //record how many bytes were read
+  if (Client.connected()) {                                       //Check whether client is connected
+    while (Client.available() > 0) {                              //read the data if any is available
+      dataBuffer[byteCount] = Client.read();                      //Add code to read in the data from the client
+      byteCount++;                                                //record how many bytes were read
       Serial.println("Data Received");
     }
 
@@ -150,9 +184,5 @@ int ReceiveWiFi(WiFiClient Client) {
           break;
       }
     }
-  }
-  else {
-    Client.stop();
-    ListenForConnections();
   }
 }
