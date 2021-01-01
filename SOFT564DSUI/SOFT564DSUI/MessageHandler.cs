@@ -364,6 +364,7 @@ namespace SOFT564DSUI
     //A class with a list of all possible request types that the controller client can take.
     static class RequestTypes
     {
+        public const byte IsAlive              = 0;
         public const byte ListAddClient        = 1;
         public const byte ListRemoveClient     = 2;
         public const byte SendEnvData          = 3;

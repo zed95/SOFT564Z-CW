@@ -15,6 +15,15 @@ namespace ProxyServer
         static public bool removeClient = false;
         static public Queue<Byte[]> RequestQueue = new Queue<byte[]>();
         public static Mutex RequestQueueMutex = new Mutex();
+        static Thread RequestHandlerThread = new Thread(RequestHandler.HandleRequest);
+
+        static public void StartRequestHandlerThread()
+        {
+            if (!RequestHandlerThread.IsAlive)
+            {
+                RequestHandlerThread.Start();
+            }
+        }
 
         static public void HandleRequest()
         {
@@ -54,6 +63,9 @@ namespace ProxyServer
                 //Turn the data back into appropriate format based on type of request.
                 switch (request[0])
                 {
+                    case RequestTypes.IsAlive:
+                        CheckAllClients(request);
+                        break;
                     case RequestTypes.ListAddClient:
                         sendAllClients(request);
                         sendClientAll();
@@ -84,6 +96,29 @@ namespace ProxyServer
             }
         }
 
+
+        static public void IsAlive()
+        {
+            List<object> request = new List<object>();
+            List<int> dataType = new List<int>();
+            byte[] requestByteArray = new byte[1];
+
+            while (true)
+            {
+                request.Add(RequestTypes.IsAlive);
+                dataType.Add(VarTypes.typeByte);
+
+                requestByteArray = byteConverter(request, dataType, 1);
+
+                RequestQueueMutex.WaitOne();
+                RequestQueue.Enqueue(requestByteArray);
+                RequestQueueMutex.ReleaseMutex();
+
+                request.Clear();
+                dataType.Clear();
+                Thread.Sleep(500);
+            }
+        }
 
         static public void AddNewClient()
         {
@@ -129,6 +164,9 @@ namespace ProxyServer
             index = clientManager.Clients.FindIndex(x => x.clientID == buggyID);
             controllerClientIndex = clientManager.Clients.FindIndex(x => x.clientID == senderID);
 
+            //Need to add code to check whether the buggy the client is trying to connect to still exists and sent appropriate response back to the client so that I dont get an exception in case
+            //the client is still able to click connect to the buggy even if it gets removed from the server and the command to remove it from the client list didnt arrive at the client yet
+
             if (!clientManager.Clients[index].inUse)
             {
                 clientManager.Clients[index].inUse = true;
@@ -165,7 +203,11 @@ namespace ProxyServer
 
             //clear the buggy id that the client was connected to and set the buggy use status to false
             clientManager.Clients[controllerClientIndex].connectedToBuggy = -1;
-            clientManager.Clients[buggyIndex].inUse = false;
+            //Check if the buggy is still connected by checking the result of buggyIndex. If -1, the buggy has been disconnected
+            if (buggyIndex != (-1))
+            {
+                clientManager.Clients[buggyIndex].inUse = false;
+            }
         }
 
         static public void SendResponse(byte[] request)
@@ -258,6 +300,23 @@ namespace ProxyServer
         }
 
 
+        public static void CheckAllClients(byte[] request)
+        {
+
+            foreach (Client clients in clientManager.Clients)
+            {
+                try
+                {
+                    clients.clientSocket.BeginSend(request, 0, request.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other clients
+                }
+                catch
+                {
+                    Console.WriteLine("Begind Send Exception");
+                    Console.WriteLine("Removing Client: " + clients.clientID);
+                    RemoveClient(clients.clientID);
+                }
+            }
+        }
 
         public static void sendAllClients(byte[] request)
         {
@@ -338,6 +397,7 @@ namespace ProxyServer
     //A class with a list of all possible request types.
     static class RequestTypes
     {
+        public const byte IsAlive              = 0;
         public const byte ListAddClient        = 1;
         public const byte ListRemoveClient     = 2;
         public const byte BuggyConnect         = 6;

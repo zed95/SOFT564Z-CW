@@ -21,15 +21,19 @@ namespace ProxyServer
         public static string data = null;
         static public bool x = false;
         static public int i = 0;
-        static Thread RequestHandlerThread = new Thread(RequestHandler.HandleRequest);
+        public static Thread IsAliveThread = new Thread(RequestHandler.IsAlive);
+
 
         public static Queue<Socket> SocketQueue = new Queue<Socket>();
         public static Mutex SocketQueueMutex = new Mutex();
 
-
-
         static public void initServer()
         {
+            RequestHandler.StartRequestHandlerThread();
+            if (!IsAliveThread.IsAlive)
+            {
+                IsAliveThread.Start();
+            }
 
             try
             {
@@ -37,11 +41,6 @@ namespace ProxyServer
                 ipAddress = ipHostInfo.AddressList[1].MapToIPv4();
                 //ipAddress = ipHostInfo.AddressList[0].MapToIPv4();
                 localEndPoint = new IPEndPoint(ipAddress, 11000);
-
-                if (!RequestHandlerThread.IsAlive)
-                {
-                    RequestHandlerThread.Start();
-                }
 
                 s = ipAddress.ToString();
                 listenerSocket = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);

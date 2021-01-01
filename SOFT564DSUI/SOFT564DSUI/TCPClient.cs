@@ -130,9 +130,10 @@ namespace SOFT564DSUI
                             ConnectionEstablished = true;
                             break;
                         case 2:     //Connection lost
-                            RemoveClient(clientID);
-                            ConnectionLost = true;
-                            clientManager.Clients.Clear();
+                            RemoveClient(clientID);             //Remove client from connection manager list
+                            MessageHandler.BuggyDisconnect();   //Starts disconnection process from the buggy
+                            ConnectionLost = true;              //set flag that indicates that connection with server was lost
+                            clientManager.Clients.Clear();      //Clear the connected client list as we have no connection to the server, we don't know who is connected.
                             break;
                         default:
 
@@ -149,7 +150,7 @@ namespace SOFT564DSUI
                         case 2:     //Connection lost
                             buggyConnected = false;   //No Buggy Was connected
                             BuggyConnectionResult = true;
-                            RemoveClient(clientID);
+                            RemoveClient(clientID);   //buggy was disconnected, therefore remove it from the conneciton manager list.
                             break;
                         default:
 
@@ -274,6 +275,20 @@ namespace SOFT564DSUI
                     //place the request data into a temporary queue.
                     switch (unqueuedBytesBuffer[0])     //if the data sent does not match any request types the while loop freezes as nothing is currently done with that byte. Need to fix that.----------mkhn
                     {
+                        case RequestTypes.IsAlive:
+                            if (bytesLeft >= 1)
+                            {
+                                Console.WriteLine("IS ALIVE");
+                                //bytes left in the unqueued byte buffer is now equal itself minus the size of the request
+                                bytesLeft -= 1;
+
+                                //copy the data that has not been placed into the temporary queue into the same buffer but in the first position which in effect overwrites the data that has been placed into the temporary queue.
+                                Buffer.BlockCopy(unqueuedBytesBuffer, 1, unqueuedBytesBuffer, 0, bytesLeft);
+
+                                //resize the buffer to the new size that is equal to the number of bytes in the buffer.
+                                Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
+                            }
+                            break;
                         case RequestTypes.ListAddClient:    //request identified as ListAddClient
                             if (bytesLeft >= 17)
                             {
@@ -401,8 +416,16 @@ namespace SOFT564DSUI
 
         //starts the transmission of data tot he specified endpoint
         public void asyncSend(byte[] buffer)
-        {   
-            socket.BeginSend(buffer, 0, buffer.Length, SocketFlags.None, SendCallback, socket);     //start the transmission process
+        {
+            try
+            {
+                socket.BeginSend(buffer, 0, buffer.Length, SocketFlags.None, SendCallback, socket);     //start the transmission process
+            }
+            catch
+            {
+                Console.WriteLine("Begin Send Exception");
+                ConnectionManager.connectionStatus(connectionID, 2);
+            }
         }
 
         //asynchronous sending callback with the result of the transmission attempt.
