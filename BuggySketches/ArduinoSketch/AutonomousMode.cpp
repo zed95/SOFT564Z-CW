@@ -2,6 +2,7 @@
 #include "Motor.h"
 #include "Sensors.h"
 
+//default minimum difference between light sensors and maximum permissiable distance from object.
 uint32_t minLightIntensityDelta = 40;
 uint32_t maxObjectDistance = 10;
 
@@ -12,25 +13,28 @@ void SelfDrive() {
   uint32_t distance;
   uint32_t lightIntensityDelta;
 
+  //Read proximity from any object using the ultrsonic module
   ReadUSSensor(distance);
-  Serial.print("Distance: ");
-  Serial.println(distance);
+
+  //If distance to object is smaller than the maximum permissiable distance in cm 
   if (distance < maxObjectDistance) {
-    MStop();
-    PickDirection();
+    MStop();                            //stop the buggy
+    PickDirection();                    //pick a direction to move to avoid the object and move
   }
-  else {
+  else {                                //otherwise
     //get LDR readings and calculate the difference between the two
     readLDRValues(rightLDR, leftLDR);
     lightIntensityDelta = LightIntensityDelta(rightLDR, leftLDR);
 
+    //if the intensity difference is large enough and there is more light to the left of the buggy then move left
     if ((leftLDR > rightLDR) && (lightIntensityDelta >= minLightIntensityDelta)) {
       MFordwardLeft();
     }
+    //if difference is big enough and more light on the right side then move right
     else if ((leftLDR < rightLDR) && (lightIntensityDelta >= minLightIntensityDelta)) {
       MFordwardRight();
     }
-    else {
+    else {  //otherwise move forward
       MForward();
     }
   }
@@ -62,25 +66,26 @@ void PickDirection() {
 
 
   if ((leftLDR >= rightLDR) && (lightIntensityDelta >= minLightIntensityDelta) && (leftDistance >= (maxObjectDistance * 2))) {          //if more light on the left (or equal to right) side and distance from object is permissible
-    MRotateAnitClockwise();
-    delay(500);
+    MRotateAnitClockwise(); //Rotate left to move away from the obstacle
+    delay(500); //let it rotate enough
   }
   else if ((rightLDR >= leftLDR) && (lightIntensityDelta >= minLightIntensityDelta) && (rightDistance >= (maxObjectDistance * 2))) {    //if more light on the right (or equal to left) side and distance from object is permissible
-    MRotateClockwise();
-    delay(500);
+    MRotateClockwise();   //Rotate right to move away from the obstacle
+    delay(500); //let it rotate enough
   }
-  else {
+  else {  //reverse and turn left to go somewhere else
     MReverse();
-    delay(1000);
+    delay(1000);  //let the buggy reverse far enough
     MRotateAnitClockwise();
-    delay(500);
+    delay(500); //let the buggy rotate left for long enough
   }
 
 }
 
+//calculates the difference in light intensity between the right and left buggy ldr
 uint32_t LightIntensityDelta(uint32_t rightLDR, uint32_t leftLDR) {
   int32_t delta;
 
-  delta = leftLDR - rightLDR;
-  return abs(delta);
+  delta = leftLDR - rightLDR; //subtract one from another
+  return abs(delta);          //make it popsitive.
 }

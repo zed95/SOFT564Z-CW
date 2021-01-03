@@ -376,8 +376,8 @@ namespace SOFT564DSUI
 
         private void portTB_TextChanged(object sender, EventArgs e)
         {
-            //if input box has any of these, disable connection button
-            if (Regex.IsMatch(portTB.Text, @"[a-zA-Z!@#$%^&£*(),.?:{ }|<> _ +=[\]\""\;\'\~\¬\-`\\/]")) 
+            //if input box has or is any of these, disable connection button
+            if (Regex.IsMatch(portTB.Text, @"[a-zA-Z!@#$%^&£*(),.?:{ }|<> _ +=[\]\""\;\'\~\¬\-`\\/]") || (portTB.Text.Length == 0) || (Int32.Parse(portTB.Text) > 65535)) 
             {
                 connectToServerBtn.Enabled = false;
             }
@@ -385,6 +385,8 @@ namespace SOFT564DSUI
             {
                 connectToServerBtn.Enabled = true;
             }
+
+
         }
 
         private void BuggyDisconnectBtn_Click(object sender, EventArgs e)

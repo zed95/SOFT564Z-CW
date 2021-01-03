@@ -18,29 +18,15 @@ namespace ProxyServer
 {
     public partial class Form1 : Form
     {
-        Thread waitForMsg;
-        String Msg;
-        byte[] buf;
-
         public Form1()
         {
             InitializeComponent();
         }
 
-
-        private void checkForMsg()
-        {
-            while (true)
-            {
-
-            }
-        }
-
         private void StartServerBtn_Click(object sender, EventArgs e)
         {
+            //initialise the server when the button is clicked.
             Server.initServer();
-            waitForMsg = new Thread(checkForMsg);
-            waitForMsg.Start();
         }
 
         private void Form1_Load(object sender, EventArgs e)

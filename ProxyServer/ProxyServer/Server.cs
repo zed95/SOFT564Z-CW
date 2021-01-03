@@ -17,7 +17,6 @@ namespace ProxyServer
         static private IPAddress ipAddress;
         static private IPEndPoint localEndPoint;
         static private Socket listenerSocket, handler;
-        static public String s;
         public static string data = null;
         static public bool x = false;
         static public int i = 0;
@@ -29,7 +28,9 @@ namespace ProxyServer
 
         static public void initServer()
         {
-            RequestHandler.StartRequestHandlerThread();
+            RequestHandler.StartRequestHandlerThread();                 //start handling the incoming requests if there are any
+
+            //starts a thread (if not already started) that periodically checks the connection status of each connected client
             if (!IsAliveThread.IsAlive)
             {
                 IsAliveThread.Start();
@@ -37,16 +38,15 @@ namespace ProxyServer
 
             try
             {
-                ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-                ipAddress = ipHostInfo.AddressList[1].MapToIPv4();
+                ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());           //get host informatiom from which we get the local endpoint address
+                ipAddress = ipHostInfo.AddressList[1].MapToIPv4();          //map the address to ipv4
                 //ipAddress = ipHostInfo.AddressList[0].MapToIPv4();
-                localEndPoint = new IPEndPoint(ipAddress, 11000);
+                localEndPoint = new IPEndPoint(ipAddress, 11000);           //set the local endpoint to local ip address and port 11,000
 
-                s = ipAddress.ToString();
-                listenerSocket = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                listenerSocket.Bind(localEndPoint);
-                listenerSocket.Listen(100);
-                listenerSocket.BeginAccept(AcceptConnectionCallback, listenerSocket);
+                listenerSocket = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);  //create a new socket
+                listenerSocket.Bind(localEndPoint);                                                         //Associate a Socket with the created local endpoint
+                listenerSocket.Listen(100);                                                                 //places the socket into listening state. Creates a connection queue of 100 before it starts rejecting incoming connections.
+                listenerSocket.BeginAccept(AcceptConnectionCallback, listenerSocket);                       //Start asynchronously accepting connections
 
 
             }
@@ -58,162 +58,21 @@ namespace ProxyServer
 
         }
 
+        //Accepts the connection and starts the process to add the connected client to the connected client list
         public static void AcceptConnectionCallback(IAsyncResult asyncResult)
         {
-            //Socket newClientSocket = listenerSocket.EndAccept(asyncResult);   //accept communication and create a new socket to handle communication with the new client
-            //Console.WriteLine("New client connected: " + newClientSocket.RemoteEndPoint);
-            //clientManager.AddClient(newClientSocket);   //create a client object the handle transcieving of data for the newly connected client.
-
-            //int count = clientManager.Clients.Count;
-            //Console.WriteLine(count);
-            //clientManager.Clients[count - 1].NewClientSend();
-
-            //listenerSocket.BeginAccept(AcceptConnectionCallback, listenerSocket);   //start accepting new incoming connections again.
-
-
-
-
             Socket newClientSocket = listenerSocket.EndAccept(asyncResult);   //accept communication and create a new socket to handle communication with the new client
-            SocketQueueMutex.WaitOne();
-            SocketQueue.Enqueue(newClientSocket);
-            SocketQueueMutex.ReleaseMutex();
+            SocketQueueMutex.WaitOne();                                       //take mutex to queue the client for addition to the connected clients list by the request handlert
+            SocketQueue.Enqueue(newClientSocket);                             //put the client in the queue
+            SocketQueueMutex.ReleaseMutex();                                  //release the mutex
 
-            RequestHandler.RequestQueueMutex.WaitOne();
-            RequestHandler.RequestQueue.Enqueue(BitConverter.GetBytes(RequestTypes.AddNewClient));
-            RequestHandler.RequestQueueMutex.ReleaseMutex();
+            RequestHandler.RequestQueueMutex.WaitOne();                                             //take mutex to add request to add a new client to the connected client list into the queue
+            RequestHandler.RequestQueue.Enqueue(BitConverter.GetBytes(RequestTypes.AddNewClient));  //queue the request
+            RequestHandler.RequestQueueMutex.ReleaseMutex();                                        //release the mutex
 
             listenerSocket.BeginAccept(AcceptConnectionCallback, listenerSocket);   //start accepting new incoming connections again.
-
         }
 
-
-        //Sends data to all connected clients.
-        public static void sendAllClients(Byte requestType, Client client)
-        {
-            Byte[] ClientInfo;
-            Byte[] NewClientUpdateInfo;
-            String StrIPAddr;
-            IPEndPoint endPoint;
-            String StrIPAddr1;
-            IPEndPoint endPoint1;
-
-            List<object> request = new List<object>();
-            List<int> dataTypes = new List<int>();
-            List<object> request1 = new List<object>();
-            List<int> dataTypes1 = new List<int>();
-
-           // ClientInfo = TransmissionConverter(requestType, client);  //Conver client data to send to all other clients.
-            request.Add(requestType);
-            dataTypes.Add(VarTypes.typeByte);
-
-            endPoint = (IPEndPoint)client.clientSocket.RemoteEndPoint;
-            IPAddress addr = endPoint.Address;
-            StrIPAddr = addr.ToString();
-            request.Add(IPtoLong(StrIPAddr));
-            dataTypes.Add(VarTypes.typeLong);
-
-            request.Add(endPoint.Port);
-            dataTypes.Add(VarTypes.typeInt32);
-
-            request.Add(client.clientID);
-            dataTypes.Add(VarTypes.typeInt32);
-
-            ClientInfo = RequestHandler.byteConverter(request, dataTypes, 17);
-
-            foreach (Client clients in clientManager.Clients)
-            {
-                try
-                {
-                    if (client.clientID != clients.clientID)
-                    {
-                        //need to add code to take into account removal requests too.
-
-
-
-
-
-
-
-
-                        if (requestType == 1)
-                        {
-                            request1.Add(requestType);
-                            dataTypes1.Add(VarTypes.typeByte);
-
-                            endPoint1 = (IPEndPoint)clients.clientSocket.RemoteEndPoint;
-                            IPAddress addr1 = endPoint1.Address;
-                            StrIPAddr1 = addr1.ToString();
-                            request1.Add(IPtoLong(StrIPAddr1));
-                            dataTypes1.Add(VarTypes.typeLong);
-
-                            request1.Add(endPoint1.Port);
-                            dataTypes1.Add(VarTypes.typeInt32);
-
-                            request1.Add(clients.clientID);
-                            dataTypes1.Add(VarTypes.typeInt32);
-
-                            NewClientUpdateInfo = RequestHandler.byteConverter(request1, dataTypes1, 17);
-                            request1.Clear();
-                            dataTypes1.Clear();
-
-                            //send data of all clients (apart from the data of the actual client itself) to the newly connected client.
-                            //NewClientUpdateInfo = TransmissionConverter(requestType, clients);
-                            client.clientSocket.BeginSend(NewClientUpdateInfo, 0, NewClientUpdateInfo.Length, SocketFlags.None, client.SendCallback, client.clientSocket);
-                        }
-                        clients.clientSocket.BeginSend(ClientInfo, 0, ClientInfo.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other clients
-                    }
-                }
-                catch(Exception e)
-                {
-                    Console.WriteLine("Exception in sendAllClients");
-                }
-            }
-        }
-
-        //Converts client data and request types into a byte array to be sent over the network
-        private static Byte[] TransmissionConverter(Byte requestType, Client client)
-        {
-            Byte[] returnByte = null;
-            Byte[] ipAddress;
-            Byte[] port;
-            Byte[] id;
-            Byte[] ByterequestType;
-            String StrIPAddr;
-            IPEndPoint endPoint;
-
-            switch (requestType)
-            {
-                case 0:
-
-                    break;
-                case 1:
-                    endPoint = (IPEndPoint)client.clientSocket.RemoteEndPoint;
-                    IPAddress addr = endPoint.Address;
-                    StrIPAddr = addr.ToString();
-                    ipAddress = BitConverter.GetBytes(IPtoLong(StrIPAddr));
-                    port = BitConverter.GetBytes(endPoint.Port);
-                    id = BitConverter.GetBytes(client.clientID);
-
-                    ByterequestType = BitConverter.GetBytes(requestType);
-                    returnByte = new byte[ipAddress.Length + port.Length + id.Length + ByterequestType.Length];
-                    Buffer.BlockCopy(ByterequestType, 0, returnByte, 0, ByterequestType.Length);
-                    Buffer.BlockCopy(ipAddress, 0, returnByte, ByterequestType.Length, ipAddress.Length);
-                    Buffer.BlockCopy(port, 0, returnByte, (ipAddress.Length + ByterequestType.Length), port.Length);
-                    Buffer.BlockCopy(id, 0, returnByte, (ipAddress.Length + ByterequestType.Length + port.Length), id.Length);
-                    break;
-                case 2:
-                    id = BitConverter.GetBytes(client.clientID);
-                    ByterequestType = BitConverter.GetBytes(requestType);
-                    returnByte = new byte[id.Length + ByterequestType.Length];
-                    Buffer.BlockCopy(ByterequestType, 0, returnByte, 0, ByterequestType.Length);
-                    Buffer.BlockCopy(id, 0, returnByte, ByterequestType.Length, id.Length);
-                    break;
-                default:
-                    break;
-            }
-
-            return returnByte;
-        }
 
         //Converts IP address from string format to long;
         static public long IPtoLong(String addressIP)
@@ -227,33 +86,41 @@ namespace ProxyServer
             {
                 if (addressIP[x] != 46) //if dot not encountered keep concatenating numbers if ip address for long parsing
                 {
+                    //extract ip number from the ip string
                     number = number + addressIP[x].ToString();
                 }
 
                 if (addressIP[x] == 46 || x == (addressIP.Length - 1))   //if dot encountered in string or end of ip string
                 {
+                    //convert the string to a number and shift to the left to create correct size and add the converted numbers together 
                     longIpAddress = longIpAddress + (long.Parse(number) << i);
+
+                    //Increase the shift to the left after each converted number to convert nect number to correct size
                     j++;
                     i = j * 8;
+
+                    //clear the number string for next string to be converted
                     number = "";
                 }
             }
 
+            //return converted ip address
             return longIpAddress;
         }
 
 
     }
 
+    //Manages the connected clients
     static class clientManager
     {
         public static List<Client> Clients = new List<Client>();
 
+        //Adds a newly connected client to the list of connected clients
         public static void AddClient(Socket socket)
         {
-            Clients.Add(new Client(socket, AssignID()));                            //Add newly connected client to the list of clients
-            //Server.sendAllClients((Byte)1, Clients[Clients.Count - 1]);             //Send data about the newly connected client to all other connected clients.
-            RequestHandler.ListAddClient(Clients[Clients.Count - 1]);
+            Clients.Add(new Client(socket, AssignID()));                  //Add newly connected client to the list of clients
+            RequestHandler.ListAddClient(Clients[Clients.Count - 1]);     //Send request to the request handler to send the newly connected client to all other connected clients  
 
         }
 
@@ -276,10 +143,8 @@ namespace ProxyServer
                     }
                 }
 
-                Clients.RemoveAt(Clients.FindIndex(x => x.clientID == id));                             //Remove the client from the list
-                //Server.sendAllClients((Byte)2, removedClient);                                          //Update all the clients connected that the client has been removoed.
-                RequestHandler.ListRemoveClient(removedClient);
-                //change the request type numbers into meaningful constants.
+                Clients.RemoveAt(Clients.FindIndex(x => x.clientID == id));        //Remove the client from the list
+                RequestHandler.ListRemoveClient(removedClient);                    //send request to all connected clients to remove the disconnected client from their list
             }
         }
 
@@ -309,15 +174,16 @@ namespace ProxyServer
         public bool inUse;
         public int connectedToBuggy;
 
+        //class constructor
         public Client(Socket socket, int id)
         {
-            clientSocket = socket;
-            clientID = id;
-            callbackBuffer = new byte[1024];
-            inUse = false;
-            connectedToBuggy = -1;
+            clientSocket = socket;              //socket is equal to the connected endpoint
+            clientID = id;                      //id of the client is the id that has been uniquely generated
+            callbackBuffer = new byte[1024];    //create a buffer for asynchronous receiving of data from the client
+            inUse = false;                      //buggy is not used by any client at the beginning
+            connectedToBuggy = -1;              //client is not connected to any buggy at the beginning 
 
-            clientReceive();
+            clientReceive();                    //Begin asynchronously receiving data
         }
 
         //calls the BeginReceive function to start receiving incoming data to the socket.
@@ -341,21 +207,30 @@ namespace ProxyServer
 
                 if (bytesReceived > 0)    //do something if we received any bytes
                 {
-                    Array.Resize(ref unqueuedBytesBuffer, bytesLeft);   //new size of array = previous bytes in the array + bytes that arrived.
-                    Buffer.BlockCopy(callbackBuffer, 0, unqueuedBytesBuffer, copyOffset, bytesReceived); //copy new bytes from callback buffer into the unqued bytes are for processing.
-                    Console.WriteLine("Number of bytes available: " + bytesLeft);
-                    //---
+                    //new size of array = previous bytes in the array + bytes that arrived.
+                    Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
 
+                    //copy new bytes from callback buffer into the unqued bytes are for processing.
+                    Buffer.BlockCopy(callbackBuffer, 0, unqueuedBytesBuffer, copyOffset, bytesReceived); 
+                    Console.WriteLine("Number of bytes available: " + bytesLeft);
                     while (bytesLeft > 0)
                     {
+                        //place the request data into a temporary queue.
                         switch (unqueuedBytesBuffer[0])
                         {
-                            case RequestTypes.ListAddClient:
+                            case RequestTypes.ListAddClient: //request identified as ListAddClient
                                 if (bytesLeft >= 17)
                                 {
+                                    //place data into temporary queue
                                     tempQueue.Enqueue(ExtractRequest(unqueuedBytesBuffer, 17));
+
+                                    //bytes left in the unqueued byte buffer is now equal itself minus the size of the request
                                     bytesLeft -= 17;
+
+                                    //copy the data that has not been placed into the temporary queue into the same buffer but in the first position which in effect overwrites the data that has been placed into the temporary queue.
                                     Buffer.BlockCopy(unqueuedBytesBuffer, 18, unqueuedBytesBuffer, 0, bytesLeft);
+
+                                    //resize the buffer to the new size that is equal to the number of bytes in the buffer.
                                     Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
                                 }
                                 else
@@ -422,12 +297,12 @@ namespace ProxyServer
                     breakout:
 
 
-                    RequestHandler.RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
-                    while (tempQueue.Count > 0) //Keep adding to request queue until the temporary queue is empty.
+                    RequestHandler.RequestQueueMutex.WaitOne();                         //Wait for signal that it's okay to enter
+                    while (tempQueue.Count > 0)                                         //Keep adding to request queue until the temporary queue is empty.
                     {
-                        RequestHandler.RequestQueue.Enqueue(tempQueue.Dequeue());               //Add request data to the queue
+                        RequestHandler.RequestQueue.Enqueue(tempQueue.Dequeue());       //Add request data to the queue
                     }
-                    RequestHandler.RequestQueueMutex.ReleaseMutex();            //Release the mutex
+                    RequestHandler.RequestQueueMutex.ReleaseMutex();                    //Release the mutex
 
                     clientReceive();
                 }
@@ -435,33 +310,32 @@ namespace ProxyServer
             catch(Exception e)  //In the case of a disconnection, remove the disconnected client and update controller clients
             {
                 Console.WriteLine("ReceiveCallback");
-                RequestHandler.RemoveClient(clientID);
+                RequestHandler.RemoveClient(clientID);  //add request to remove client to the request handler
             }
         }
 
+        //asynchronously send data to target client
         public void clientSend(byte[] buffer)
         {
-
-            clientSocket.BeginSend(buffer, 0, buffer.Length, SocketFlags.None, SendCallback, clientSocket); //send data to the other client
-
+            clientSocket.BeginSend(buffer, 0, buffer.Length, SocketFlags.None, SendCallback, clientSocket); //send data to target client
         }
 
         //callback function when data was sent.
         public void SendCallback(IAsyncResult asyncResult)
         {
-            //int sent = clientSocket.EndSend(asyncResult);
-            //if(sent > 0)
-            //{
-            //    Console.WriteLine("Client Sent Bytes");
-            //}
+            //do nothing
         }
 
-
+        //Used the extract the request data from client buffers that hold request data from either the server or buggy.
         private Byte[] ExtractRequest(Byte[] bytes, int size)
         {
+            //create an array of size of the request
             Byte[] requestBytes = new byte[size];
 
+            //copy the bytes from the client buffer to the new array
             Buffer.BlockCopy(bytes, 0, requestBytes, 0, size);
+
+            //return the extracted request data
             return requestBytes;
         }
 

@@ -38,11 +38,9 @@ namespace ProxyServer
                     RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
                     if (RequestQueue.Count > 0)
                     {
-                        Console.WriteLine("Request handler has queue access");
                         request = new byte[RequestQueue.Peek().Length];
                         request = RequestQueue.Dequeue(); //Remove request data to the queue
                         count = request.Length;         //Count the number of bytes in the messages buffer.
-                        Console.WriteLine("Request handler is releasing mutex");
                         RequestQueueMutex.ReleaseMutex();            //Release the mutex
                         break;
                     }
@@ -212,8 +210,10 @@ namespace ProxyServer
             }
         }
 
+        //fulfil the request to send response to target controller client
         static public void SendResponse(byte[] request)
         {
+            //find the list index of the target client to send the response to
             int targetClient = BitConverter.ToInt32(request, 2);
             int index = clientManager.Clients.FindIndex(x => x.clientID == targetClient);
 
@@ -221,16 +221,21 @@ namespace ProxyServer
             clientManager.Clients[index].clientSend(request);
         }
 
+        //converts requests and its data to an array of bytes in preparation for transmission over the network
         static public byte[] byteConverter(List<object> request, List<int> dataTypes, int byteCount)
         {
             byte[] byteArray = new byte[byteCount];
             int offset = 0;
 
+            //Convert all data in the request array into bytes. before the data can be converted from the object list, it needs to be cast to the appopriate datatype.
+            //This is the reason the dataTypes list exists. It holds the datatypes of the data that has been placed into the request list.
             //Convert all datatypes to bytes and put into a byte array in preparation for transmission
             for (int x = 0; x < request.Count; x++)
             {
                 switch (dataTypes[x])
                 {
+                    //copy the data from the request array into to byteArray as bytes then increase the offset by the number of bytes that the data consisted of to allow the
+                    //next piece of data from the request array to be copied into the byteArray without overwriting data that's already in there.
                     case VarTypes.typeByte:
                         Buffer.BlockCopy(BitConverter.GetBytes((byte)request[x]), 0, byteArray, offset, 1);
                         offset += 1;
@@ -301,7 +306,7 @@ namespace ProxyServer
             RequestQueueMutex.ReleaseMutex();
         }
 
-
+        //sends a request to all connected clients to see if they are still connected.
         public static void CheckAllClients(byte[] request)
         {
 
@@ -313,6 +318,7 @@ namespace ProxyServer
                 }
                 catch
                 {
+                    //error in sending isAlive request to the client. Remove it as it disconnected.
                     Console.WriteLine("Begind Send Exception");
                     Console.WriteLine("Removing Client: " + clients.clientID);
                     RemoveClient(clients.clientID);
@@ -320,6 +326,7 @@ namespace ProxyServer
             }
         }
 
+        //send data to all clients
         public static void sendAllClients(byte[] request)
         {
 
@@ -328,7 +335,7 @@ namespace ProxyServer
                 
                 try
                 {
-                    if (request[0] == RequestTypes.ListAddClient)
+                    if (request[0] == RequestTypes.ListAddClient)   //if the request is for other clients to add a client to the list:
                     {
                         //prevents the data about the newest client being sent to itself
                         if (clients.clientID != clientManager.Clients[clientManager.Clients.Count - 1].clientID)
@@ -336,7 +343,7 @@ namespace ProxyServer
                             clients.clientSocket.BeginSend(request, 0, request.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other clients
                         }
                     }
-                    else if(request[0] == RequestTypes.ListRemoveClient)
+                    else if(request[0] == RequestTypes.ListRemoveClient) //if the request is for other clients to delete a disconnected client from their list
                     {
                         clients.clientSocket.BeginSend(request, 0, request.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other clients
                     }
@@ -344,11 +351,14 @@ namespace ProxyServer
                 catch (Exception e)
                 {
                     Console.WriteLine("Exception in sendAllClients");
+                    //remove the client who disconnected when attempt was made to send data to it
+                    RemoveClient(clients.clientID);
                 }
             }
         }
 
 
+        //sned newly connected client information about all other connected clients.
         public static void sendClientAll()
         {
             List<object> request = new List<object>();
@@ -360,22 +370,27 @@ namespace ProxyServer
             foreach (Client clients in clientManager.Clients)
             {
                 try
-                {
+                {   
+                    //Add request type to the request object list and the request's type to the dataType list
                     request.Add(RequestTypes.ListAddClient);
                     dataType.Add(VarTypes.typeByte);
 
+                    //extract ipaddress of the client and convert it to a long and add it to the request list. The add the its datatype to the dataType list
                     endPoint = (IPEndPoint)clients.clientSocket.RemoteEndPoint;
                     IPAddress addr = endPoint.Address;
                     StrIPAddr = addr.ToString();
                     request.Add(Server.IPtoLong(StrIPAddr));
                     dataType.Add(VarTypes.typeLong);
 
+                    //add the port
                     request.Add(endPoint.Port);
                     dataType.Add(VarTypes.typeInt32);
 
+                    //add client id
                     request.Add(clients.clientID);
                     dataType.Add(VarTypes.typeInt32);
 
+                    //convert the data from the request list to a byte array for sending over the network
                     requestByteArray = RequestHandler.byteConverter(request, dataType, 17);
 
                     if (clients.clientID != clientManager.Clients[clientManager.Clients.Count - 1].clientID)        //Do not send information about the newest client to itself
@@ -383,12 +398,15 @@ namespace ProxyServer
                         clientManager.Clients[clientManager.Clients.Count - 1].clientSocket.BeginSend(requestByteArray, 0, requestByteArray.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other clients
                     }
 
+                    //clear the lists for the next iteration
                     request.Clear();
                     dataType.Clear();
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine("Exception in sendAllClients");
+                    //remove client that was disconnected
+                    RemoveClient(clients.clientID);
                 }
             }
         }
@@ -410,6 +428,7 @@ namespace ProxyServer
     }
 
 
+    //a class of variable types used in the byte converter to convert request data into bytes
     static class VarTypes
     {
         public const int typeByte = 1;
@@ -417,6 +436,7 @@ namespace ProxyServer
         public const int typeLong = 3;
     }
 
+    //class containing all the responses to the controller client asking for permission to connect to a buggy
     static class BuggyConnectResponse
     {
         public const byte ConnectPermitted = 1;

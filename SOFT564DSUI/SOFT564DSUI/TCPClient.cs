@@ -175,6 +175,7 @@ namespace SOFT564DSUI
         private Byte[] unqueuedBytesBuffer = new byte[0];
 
 
+        //constructor for the class
         public ConnectionInstance(long ip, int port, int id)
         {
             connectionID = id;
@@ -195,6 +196,8 @@ namespace SOFT564DSUI
             catch (Exception e)
             {
                 //ConnectionEstablished = false;
+                Console.WriteLine("Error ConnectClientTo");
+                Console.WriteLine(e);
             }
         }
 
@@ -278,7 +281,6 @@ namespace SOFT564DSUI
                         case RequestTypes.IsAlive:
                             if (bytesLeft >= 1)
                             {
-                                Console.WriteLine("IS ALIVE");
                                 //bytes left in the unqueued byte buffer is now equal itself minus the size of the request
                                 bytesLeft -= 1;
 

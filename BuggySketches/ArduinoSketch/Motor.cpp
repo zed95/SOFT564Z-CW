@@ -4,7 +4,7 @@
 Servo ultrasonicServo;
 uint32_t buggySpeed = 255;
 
-
+//initialise motor and servo pins
 void SetupMotor() {
   pinMode(RIGHT_DIR, OUTPUT);
   pinMode(LEFT_DIR, OUTPUT);
@@ -14,56 +14,66 @@ void SetupMotor() {
   ultrasonicServo.attach(SERVO_PIN);
 }
 
+//move servo to a specified position
 void MoveServo(int pos) {
-  ultrasonicServo.write(pos);  // set servo to mid-point
+  ultrasonicServo.write(pos);  // set servo to mid-point. 90 - face forward, left - 180, right - 0
 }
 
+//Stop the buggy
 void MStop() {
   WriteRightMotor(FORWARD, 0, BRAKE_ON);
   WriteLeftMotor(FORWARD, 0, BRAKE_ON);  
 }
 
+//Move buggy forward
 void MForward() {
   WriteRightMotor(REVERSE, buggySpeed, BRAKE_OFF);
   WriteLeftMotor(FORWARD, buggySpeed, BRAKE_OFF);
 }
 
+//Make the buggy move backward
 void MReverse() {
   WriteRightMotor(FORWARD, buggySpeed, BRAKE_OFF);
   WriteLeftMotor(REVERSE, buggySpeed, BRAKE_OFF);
 }
 
+//rotate the buggy right
 void MRotateClockwise() {
   WriteRightMotor(FORWARD, buggySpeed, BRAKE_OFF);
   WriteLeftMotor(FORWARD, buggySpeed, BRAKE_OFF);
 }
 
+//rotate the buggy left
 void MRotateAnitClockwise() {
   WriteRightMotor(REVERSE, buggySpeed, BRAKE_OFF);
   WriteLeftMotor(REVERSE, buggySpeed, BRAKE_OFF);
 }
 
+//make the buggy turn right while also moving forward
 void MFordwardRight() {
   WriteRightMotor(REVERSE, buggySpeed/2, BRAKE_OFF);
   WriteLeftMotor(FORWARD, buggySpeed, BRAKE_OFF);  
 }
 
+//make the buggy turn left while also moving forward
 void MFordwardLeft() {
   WriteRightMotor(REVERSE, buggySpeed, BRAKE_OFF);
   WriteLeftMotor(FORWARD, buggySpeed/2, BRAKE_OFF);   
 }
 
+//make the buggy reverse while also turning right
 void MReverseRight() {
   WriteRightMotor(FORWARD, buggySpeed/2, BRAKE_OFF);
   WriteLeftMotor(REVERSE, buggySpeed, BRAKE_OFF);   
 }
 
+//make the buggy reverse while also turning left
 void MReverseLeft() {
   WriteRightMotor(FORWARD, buggySpeed, BRAKE_OFF);
   WriteLeftMotor(REVERSE, buggySpeed/2, BRAKE_OFF); 
 }
 
-
+//set the right motor pins to move the motor or stop it
 void WriteRightMotor(int dir, int spd, int brake) {
     //Set spin direction
     if(dir > 0) {
@@ -94,6 +104,7 @@ void WriteRightMotor(int dir, int spd, int brake) {
   
 }
 
+//set the left motor pins to move the motor or stop it
 void WriteLeftMotor(int dir, int spd, int brake) {
     //Set spin direction
     if(dir > 0) {

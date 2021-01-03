@@ -7,7 +7,7 @@ int serialNewestByte = 0;
 int serialBytesInQueue = 0;
 
 void SetupSerial(int baudRate) {
-  Serial.begin(115200);
+  Serial.begin(115200); //for debugging purposes
   Serial1.begin(115200, SERIAL_8N1);
 }
 
@@ -32,7 +32,7 @@ void ReceiveSerial() {
       case MOVE_BUGGY:
         if (serialBytesInQueue >= 2) {  //check if there are enough bytes in the serial buffer to add this request to the request handler queue for processing. If there are enough
           RemoveQueue(&serialByteBuffer[0], serialOldestByte, serialBytesInQueue, &dataBuffer[0], 2);   //Remove from the data from serial buffer
-          AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &dataBuffer[0], 2);          //and place in request buffer
+          AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &dataBuffer[0], 2);                  //and place in request buffer
         }
         else {  //otherwise
           goto breakout;  //jump to breakout in order to wait for more data to be read.
