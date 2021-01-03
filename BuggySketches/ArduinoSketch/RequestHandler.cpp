@@ -14,15 +14,16 @@ byte interactionMode = 0;
 void HandleRequest() {
   byte requestArray[queueSize];
 
+  //carry out requests until there are no more bytes in the queue
   while (rhBytesInQueue > 0) {
-    switch (peekQueue(&requestQueue[0], rhOldestByte)) {
+    switch (peekQueue(&requestQueue[0], rhOldestByte)) {  //peek the first byte in the queue to see what type of request we have.
       case MOVE_BUGGY:
-        RemoveQueue(&requestQueue[0], rhOldestByte, rhBytesInQueue, &requestArray[0], 2);
-        MoveBuggy(*(requestArray + 1));
+        RemoveQueue(&requestQueue[0], rhOldestByte, rhBytesInQueue, &requestArray[0], 2); //remove request bytes from the queue
+        MoveBuggy(*(requestArray + 1)); //carry out the request
         break;
       case INTERACTION_MODE:
-          RemoveQueue(&requestQueue[0], rhOldestByte, rhBytesInQueue, &requestArray[0], 2);
-          InteractionMode(&requestArray[0]);
+        RemoveQueue(&requestQueue[0], rhOldestByte, rhBytesInQueue, &requestArray[0], 2);
+        InteractionMode(&requestArray[0]);
         break;
       case CURR_CONFIG_PARAM:
         RemoveQueue(&requestQueue[0], rhOldestByte, rhBytesInQueue, &requestArray[0], 2);
@@ -38,17 +39,19 @@ void HandleRequest() {
   }
 }
 
+//Adds n bytes to the selected queue from the source array.
 void AddQueue(byte *queue, int &newestByte, int &bytesInQueue, byte *srcArray, int nBytes) {
 
+  //iterate through n bytes in the source array
   for (int x = 0; x < nBytes; x++) {
-    if (bytesInQueue < queueSize) {
-      *(queue + newestByte) = *(srcArray + x);
-      bytesInQueue++;
-      if (newestByte == (queueSize - 1)) {
-        newestByte = 0;
+    if (bytesInQueue < queueSize) {                 //continue if the queue is not full and is able to accept more bytes
+      *(queue + newestByte) = *(srcArray + x);      //place the byte from the source array to the queue at index newestByte which points to the next free space in the queue
+      bytesInQueue++;                               //byte has been added to the queue and therefore increment the bytesInQueue variable
+      if (newestByte == (queueSize - 1)) {          //if data has been added to the queue at the boundary of the queue
+        newestByte = 0;                             //the next free space is at position 0 of the queue
       }
       else {
-        newestByte++;
+        newestByte++;                               //the byte has not beed added at the boundary of the queue and therefore increment to the next free space in the queue
       }
 
     }
@@ -58,17 +61,19 @@ void AddQueue(byte *queue, int &newestByte, int &bytesInQueue, byte *srcArray, i
   }
 }
 
+//Removes n bytes from selected queue and returns the extracted bytes
 void RemoveQueue(byte *queue, int &oldestByte, int &bytesInQueue, byte *dstArray, int nBytes) {
 
+  //iterate through the first n bytes
   for (int i = 0; i < nBytes; i++) {
     if (bytesInQueue > 0) {
-      *(dstArray + i) = *(queue + oldestByte);
-      bytesInQueue--;
-      if (oldestByte == (queueSize - 1)) {
-        oldestByte = 0;
+      *(dstArray + i) = *(queue + oldestByte);      //places the first byte in the queue into the destination array at index i
+      bytesInQueue--;                               //number of bytes in queue decreases by 1 as one byte has been "removed"
+      if (oldestByte == (queueSize - 1)) {          //if first byte in the queue has been removed from the boundary of the queue,
+        oldestByte = 0;                             //first byte in the queue is now at index 0
       }
       else {
-        oldestByte++;
+        oldestByte++;                               //the first byte in the queue was not removed at boundary therefore increment the indicator to the next byte in the queue.
       }
     }
     else {
@@ -79,6 +84,7 @@ void RemoveQueue(byte *queue, int &oldestByte, int &bytesInQueue, byte *dstArray
   }
 }
 
+//Returns the first byte in the queue without actually removing the byte.
 byte peekQueue(byte *queue, int oldestByte) {
   byte firstQueueValue = 0;
 
@@ -87,7 +93,7 @@ byte peekQueue(byte *queue, int oldestByte) {
   return firstQueueValue;
 }
 
-
+//calls appropriate move buggy function based on the received command
 void MoveBuggy(byte dir) {
 
   //0000      no motion
@@ -106,6 +112,7 @@ void MoveBuggy(byte dir) {
   //1101      left right and forward = forward
   //1110      left, right, reverse = reverse
   //1111      no motion
+  
   switch (dir) {
     case 0:
       MStop();
@@ -161,6 +168,7 @@ void MoveBuggy(byte dir) {
   }
 }
 
+//sneds the current configuration parameter based on the chosen option by the controller client
 void CurrConfigParam(byte *byteArray) {
 
   switch (*(byteArray + 1)) {
@@ -178,7 +186,7 @@ void CurrConfigParam(byte *byteArray) {
   }
 }
 
-
+//Sends the current configuration parameter back to ESP32 to transmit to the controller client
 void SendCurrConfig(uint32_t parameter) {
   byte byteBuffer[5];
   byte *p;
@@ -189,19 +197,15 @@ void SendCurrConfig(uint32_t parameter) {
     byteBuffer[x + 1] = *(p + x);
   }
 
-  Serial.println(byteBuffer[0]);
-  Serial.println(byteBuffer[1]);
-  Serial.println(byteBuffer[2]);
-  Serial.println(byteBuffer[3]);
-  Serial.println(byteBuffer[4]);
-  SendSerial(&byteBuffer[0], 5);
+  SendSerial(&byteBuffer[0], 5);                  //send via uart
 }
 
+//updates the configuration option parameter with a new value chosen by the controller client
 void UpdateConfigOption(byte *byteArray) {
   switch (*(byteArray + 1)) {
     case MAX_OBJECT_DISTANCE:
-      maxObjectDistance = ToInt(&byteArray[2]);
-      ConfigUpdateStatus(CONFIG_UPDATE_STATUS_OK);
+      maxObjectDistance = ToInt(&byteArray[2]);       //convert value bytes to integer
+      ConfigUpdateStatus(CONFIG_UPDATE_STATUS_OK);    //sends the result back to the controller client
       break;
     case BUGGY_SPEED:
       buggySpeed = ToInt(&byteArray[2]);
@@ -216,6 +220,7 @@ void UpdateConfigOption(byte *byteArray) {
   }
 }
 
+//converts integer bytes back to an integer
 int ToInt(byte *byteArray) {
   int intResult = 0;
 
@@ -226,19 +231,21 @@ int ToInt(byte *byteArray) {
   return intResult;
 }
 
+//constructs the request and sends it via uart back to esp32
 void ConfigUpdateStatus(byte updateStatus) {
   byte byteBuffer[2];
 
-  byteBuffer[0] = CONFIG_UPDATE_STATUS;
-  byteBuffer[1] = updateStatus;
+  byteBuffer[0] = CONFIG_UPDATE_STATUS;   //request type
+  byteBuffer[1] = updateStatus;           //request data
 
-  SendSerial(&byteBuffer[0], 2);
+  SendSerial(&byteBuffer[0], 2);          //send via serial
 }
 
+//modifies the interaction mode
 void InteractionMode(byte *byteArray) {
   switch (*(byteArray + 1)) {
     case INTMODE_MANUAL:
-      interactionMode = INTMODE_MANUAL;
+      interactionMode = INTMODE_MANUAL;               //change interaction mode to manual
       MStop();                                        //if the mode is not autonomous stop the buggy from moving
       break;
     case INTMODE_CONFIGURATION:

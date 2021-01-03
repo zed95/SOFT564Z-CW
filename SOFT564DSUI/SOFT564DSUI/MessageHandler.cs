@@ -96,7 +96,15 @@ namespace SOFT564DSUI
                         BuggyConnectResponse.response = request[1];
                         break;
                     case RequestTypes.BuggyDisconnect:
-                        ConnectionManager.Connections[0].asyncSend(request);    //Notify the server that the controller client is giving up control of the buggy.
+                        try
+                        {
+                            ConnectionManager.Connections[0].asyncSend(request);    //Notify the server that the controller client is giving up control of the buggy.
+                        }
+                        catch
+                        {
+                            //Error in sending. Disconnection occurred, remove the server from connected devices list.
+                            ConnectionManager.connectionStatus(ConnectionManager.Connections[0].connectionID, 2);
+                        }
                         ConnectionManager.Connections[1].DisconnectClient();    //Begin the process of disconnecting from the buggy.
                         break;
                     case RequestTypes.MoveBuggy:

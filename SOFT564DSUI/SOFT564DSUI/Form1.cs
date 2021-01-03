@@ -196,6 +196,7 @@ namespace SOFT564DSUI
                 //check if first and last chars are numbers
                 if ((ipAddress[0] < 48) || (ipAddress[0] > 57)) 
                 {
+                    //error has been detected therefore no need to carry on checking. Jump to IpaddressError label.
                     goto IpaddressError;
                 }
                 else if ((ipAddress[ipAddress.Length -1] < 48) || (ipAddress[ipAddress.Length - 1] > 57)) {
@@ -237,7 +238,6 @@ namespace SOFT564DSUI
                     {
                         //convert the string to a number and shift to the left to create correct size and add the converted numbers together 
                         addressInt = int.Parse(number);
-
                         if(addressInt < 0 || addressInt > 255)
                         {
                             goto IpaddressError;

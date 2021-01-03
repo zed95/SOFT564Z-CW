@@ -148,7 +148,7 @@ namespace ProxyServer
 
         static public void BuggyConnect(int buggyID, int senderID)
         {
-            int index;
+            int buggyIndex;
             int controllerClientIndex;
             List<object> request = new List<object>();
             List<int> dataType = new List<int>();
@@ -157,26 +157,28 @@ namespace ProxyServer
             request.Add(RequestTypes.BuggyConnectResponse);
             dataType.Add(VarTypes.typeByte);
 
-            //check if buggy still exists in the list before checking if it is in use. send response and request to the controller client to delete it if it doesnt.
-            //if the buggy still exists, check the connection status by sending IsAlive request to it to see if exception occurs. if it does delete the buggy from the list and send response to the controller client
-            //if the buggy is connected see if it is free and give appropriate response.
-
-            index = clientManager.Clients.FindIndex(x => x.clientID == buggyID);
+            //find where the clients reside in the connected client list. if -1 returned, client no longer exists in the list andf therefore has been disconnected.
+            buggyIndex = clientManager.Clients.FindIndex(x => x.clientID == buggyID);
             controllerClientIndex = clientManager.Clients.FindIndex(x => x.clientID == senderID);
 
-            //Need to add code to check whether the buggy the client is trying to connect to still exists and sent appropriate response back to the client so that I dont get an exception in case
-            //the client is still able to click connect to the buggy even if it gets removed from the server and the command to remove it from the client list didnt arrive at the client yet
-
-            if (!clientManager.Clients[index].inUse)
+            if (buggyIndex != -1)   //Proceed if the buggy is still connected
             {
-                clientManager.Clients[index].inUse = true;
-                clientManager.Clients[controllerClientIndex].connectedToBuggy = buggyID;
-                request.Add(BuggyConnectResponse.ConnectPermitted);
-                dataType.Add(VarTypes.typeByte);
+                if (!clientManager.Clients[buggyIndex].inUse)
+                {
+                    clientManager.Clients[buggyIndex].inUse = true;
+                    clientManager.Clients[controllerClientIndex].connectedToBuggy = buggyID;
+                    request.Add(BuggyConnectResponse.ConnectPermitted);
+                    dataType.Add(VarTypes.typeByte);
+                }
+                else
+                {
+                    request.Add(BuggyConnectResponse.BuggyInUse);
+                    dataType.Add(VarTypes.typeByte);
+                }
             }
-            else
+            else //otherwise send response back to controller client that buggy is no longer connected to the server
             {
-                request.Add(BuggyConnectResponse.BuggyInUse);
+                request.Add(BuggyConnectResponse.BuggyConnectionLost);
                 dataType.Add(VarTypes.typeByte);
             }
 
@@ -419,6 +421,7 @@ namespace ProxyServer
     {
         public const byte ConnectPermitted = 1;
         public const byte BuggyInUse = 2;
+        public const byte BuggyConnectionLost = 3;
     }
 
 }

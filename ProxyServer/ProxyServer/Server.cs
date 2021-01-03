@@ -259,10 +259,23 @@ namespace ProxyServer
 
         public static void RemoveClient(int id)
         {
+            int buggyIndex = -1;
             Client removedClient;
             if (Clients.Exists(ClientToRemove => ClientToRemove.clientID == id))                        //Prevent Multiple exceptions from calling for removal of the client by checking if client of such id exists
             {
                 removedClient = Clients.Find(DisconnectedClient => DisconnectedClient.clientID == id);  //extract info of the client to remove in order to tell other clients to remove the client from their list.
+                
+                //check if the client that was disconnected was connected to a buggy. If the client was connected to a buggy, then find the buggy and mark it as free.
+                if(removedClient.connectedToBuggy != -1)
+                {
+                    buggyIndex = clientManager.Clients.FindIndex(x => x.clientID == removedClient.connectedToBuggy);    //find where the buggy that the client was connected is in the list of clients
+
+                    if (buggyIndex != -1)   //if the buggy is still in the list
+                    {
+                        clientManager.Clients[buggyIndex].inUse = false;    //make it available for other users to connect to it.
+                    }
+                }
+
                 Clients.RemoveAt(Clients.FindIndex(x => x.clientID == id));                             //Remove the client from the list
                 //Server.sendAllClients((Byte)2, removedClient);                                          //Update all the clients connected that the client has been removoed.
                 RequestHandler.ListRemoveClient(removedClient);
