@@ -17,6 +17,7 @@ namespace ProxyServer
         public static Mutex RequestQueueMutex = new Mutex();
         static Thread RequestHandlerThread = new Thread(RequestHandler.HandleRequest);
 
+        //Start the request handler thread
         static public void StartRequestHandlerThread()
         {
             if (!RequestHandlerThread.IsAlive)
@@ -25,40 +26,31 @@ namespace ProxyServer
             }
         }
 
+        //Carry out the queued requests
         static public void HandleRequest()
         {
             Byte[] request;
-            int count = 0;
 
             while (true)
             {
                 while (true)
                 {
-                    //Console.WriteLine("Request handler is requesting queue access");
-                    RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
-                    if (RequestQueue.Count > 0)
+                    RequestQueueMutex.WaitOne();                            //Wait for signal that it's okay to enter
+                    if (RequestQueue.Count > 0)                             //If there are more than 0 requests in the queue
                     {
-                        request = new byte[RequestQueue.Peek().Length];
-                        request = RequestQueue.Dequeue(); //Remove request data to the queue
-                        count = request.Length;         //Count the number of bytes in the messages buffer.
-                        RequestQueueMutex.ReleaseMutex();            //Release the mutex
-                        break;
+                        request = new byte[RequestQueue.Peek().Length];     //create an array of size equal to the next request
+                        request = RequestQueue.Dequeue();                   //Remove request data to the queue
+                        RequestQueueMutex.ReleaseMutex();                   //Release the mutex
+                        break;                                              //Break out of the loop and carry out the request
                     }
                     else
                     {
-                        RequestQueueMutex.ReleaseMutex();            //Release the mutex
+                        RequestQueueMutex.ReleaseMutex();                   //Release the mutex
                     }
                 }
 
 
-                for (int x = 0; x < request.Length; x++)
-                {
-                    Console.WriteLine(request[x]);
-                }
-                Console.WriteLine("Number of bytes in buffer: " + count);
-
-
-                //Turn the data back into appropriate format based on type of request.
+                //Carry out the request based on the type of request.
                 switch (request[0])
                 {
                     case RequestTypes.IsAlive:
@@ -87,20 +79,21 @@ namespace ProxyServer
                         clientManager.RemoveClient(BitConverter.ToInt32(request, 1));
                         break;
                     default:
-
+                        //do nothing as request was undefined
                         break;
                 }
-
             }
         }
 
 
+        //creates the request that makes the server check if clients are still connected
         static public void IsAlive()
         {
             List<object> request = new List<object>();
             List<int> dataType = new List<int>();
             byte[] requestByteArray = new byte[1];
 
+            //Create the request, put the requests into the requests queue and sleep the thread for 500ms
             while (true)
             {
                 request.Add(RequestTypes.IsAlive);
@@ -118,6 +111,7 @@ namespace ProxyServer
             }
         }
 
+        //function that carries out the request of adding a new connected client to the connected client list.
         static public void AddNewClient()
         {
             Server.SocketQueueMutex.WaitOne();
@@ -125,20 +119,24 @@ namespace ProxyServer
             Server.SocketQueueMutex.ReleaseMutex();
         }
 
+        //Create a request to remove client from the connected client list
         static public void RemoveClient(int clientID)
         {
             List<object> request = new List<object>();
             List<int> dataType = new List<int>();
             byte[] requestByteArray = new byte[5];
 
+            //add the data and the data types to the lists
             request.Add(RequestTypes.RemoveClient);
             dataType.Add(VarTypes.typeByte);
 
             request.Add(clientID);
             dataType.Add(VarTypes.typeInt32);
 
+            //create a byte array from the lists
             requestByteArray = byteConverter(request, dataType, 5);
 
+            //wait for mutex and add the request to the request queue.
             RequestQueueMutex.WaitOne();
             RequestQueue.Enqueue(requestByteArray);
             RequestQueueMutex.ReleaseMutex();
@@ -161,17 +159,17 @@ namespace ProxyServer
 
             if (buggyIndex != -1)   //Proceed if the buggy is still connected
             {
-                if (!clientManager.Clients[buggyIndex].inUse)
+                if (!clientManager.Clients[buggyIndex].inUse)   //if buggy is not used then mark it as used
                 {
-                    clientManager.Clients[buggyIndex].inUse = true;
-                    clientManager.Clients[controllerClientIndex].connectedToBuggy = buggyID;
-                    request.Add(BuggyConnectResponse.ConnectPermitted);
-                    dataType.Add(VarTypes.typeByte);
+                    clientManager.Clients[buggyIndex].inUse = true;     //buggy is now being usued
+                    clientManager.Clients[controllerClientIndex].connectedToBuggy = buggyID; //the client that uses the buggy has the buggy id assigned to this variable 
+                    request.Add(BuggyConnectResponse.ConnectPermitted); //response data 
+                    dataType.Add(VarTypes.typeByte);                    //type of data of the response
                 }
-                else
+                else //otherwise
                 {
-                    request.Add(BuggyConnectResponse.BuggyInUse);
-                    dataType.Add(VarTypes.typeByte);
+                    request.Add(BuggyConnectResponse.BuggyInUse); //response data: buggy is used
+                    dataType.Add(VarTypes.typeByte);              //type of data of the response
                 }
             }
             else //otherwise send response back to controller client that buggy is no longer connected to the server
@@ -180,17 +178,20 @@ namespace ProxyServer
                 dataType.Add(VarTypes.typeByte);
             }
 
+            //add sender ID to the request so that the requset handler knows who to send the response to
             request.Add(senderID);
             dataType.Add(VarTypes.typeInt32);
 
+            //convert all the data in the list into a byte arrat for transmission
             requestByteArray = byteConverter(request, dataType, 6);
 
+            //wait for mutex, add the request to queue safely and then release the mutex
             RequestQueueMutex.WaitOne();
             RequestQueue.Enqueue(requestByteArray);
             RequestQueueMutex.ReleaseMutex();
-
         }
 
+        //carries out the request that resets the variables of the buggy amd controller client associated with being connected to each other after the controller client disconnects from the buggy.
         static public void BuggyDisconnect(int senderID)
         {
             int controllerClientIndex;
@@ -256,6 +257,7 @@ namespace ProxyServer
             return byteArray;
         }
 
+        //Generates a request to send to connected clients to add newly connected client to their list.
         static public void ListAddClient(Client client)
         {
             List<object> request = new List<object>();
@@ -267,6 +269,7 @@ namespace ProxyServer
             request.Add(RequestTypes.ListAddClient);
             dataType.Add(VarTypes.typeByte);
 
+            //conver the ip address to a long and add to the list
             endPoint = (IPEndPoint)client.clientSocket.RemoteEndPoint;
             IPAddress addr = endPoint.Address;
             StrIPAddr = addr.ToString();
@@ -287,6 +290,7 @@ namespace ProxyServer
 
         }
 
+        //Generates a request to send to connected clients to remove disconnected client to their list.
         static public void ListRemoveClient(Client client)
         {
             List<object> request = new List<object>();

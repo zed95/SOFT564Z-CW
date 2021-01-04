@@ -13,18 +13,15 @@ namespace ProxyServer
 {
     class Server
     {
-        static private IPHostEntry ipHostInfo;
-        static private IPAddress ipAddress;
-        static private IPEndPoint localEndPoint;
-        static private Socket listenerSocket, handler;
-        public static string data = null;
-        static public bool x = false;
-        static public int i = 0;
-        public static Thread IsAliveThread = new Thread(RequestHandler.IsAlive);
+        static private IPHostEntry ipHostInfo;          //stores the host's ip information
+        static private IPAddress ipAddress;             //stores the local ednpoint ip address
+        static private IPEndPoint localEndPoint;        //sets the localendpoint of the server to specified ip address and port;
+        static private Socket listenerSocket;           //socket that the local endpoint is associated with
+        public static Thread IsAliveThread = new Thread(RequestHandler.IsAlive);    //creates a thread that checks connection status of connected clients periodically
 
-
-        public static Queue<Socket> SocketQueue = new Queue<Socket>();
-        public static Mutex SocketQueueMutex = new Mutex();
+        
+        public static Queue<Socket> SocketQueue = new Queue<Socket>();  //Socket queue that is used to store clients that are yet to be added to the connected clients list
+        public static Mutex SocketQueueMutex = new Mutex();             //Mutex created to allow safe addition and removal of client socket information
 
         static public void initServer()
         {
@@ -52,7 +49,7 @@ namespace ProxyServer
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error");
+                Console.WriteLine("Error Initiating Server");
                 Console.WriteLine(e);
             }
 
@@ -195,10 +192,10 @@ namespace ProxyServer
         //function called in response to data being received.
         private void ReceiveCallback(IAsyncResult asyncResult)
         {
-            int bytesReceived;
-            int bytesLeft; 
+            int bytesReceived;                                  //counts the number of new bytes received from the remote endpoint   
+            int bytesLeft;                                      //stores the number of bytes left that have not been added to the request queue
             int copyOffset = unqueuedBytesBuffer.Length;        //new bytes to be copy at an offset of the of the old array before its size increases.
-            Queue<Byte[]> tempQueue = new Queue<byte[]>();
+            Queue<Byte[]> tempQueue = new Queue<byte[]>();      //Temporary queue that stores the requests before they are put into the request queue.
 
             try
             {
