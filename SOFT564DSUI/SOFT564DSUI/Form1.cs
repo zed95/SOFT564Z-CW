@@ -430,38 +430,41 @@ namespace SOFT564DSUI
                 //Send request to server to ask for permission to connect to the selected buggy.
                 MessageHandler.BuggyConnect(Convert.ToInt32(listBox1.SelectedItem));
 
-                //Wait for the response from the server
-                while (BuggyConnectResponse.response == 0) { }     
+                //Wait for the response from the server or until connection with server is lost
+                while (BuggyConnectResponse.response == 0 && (ConnectionManager.ConnectionLost == false)) { }
 
-                switch (BuggyConnectResponse.response)
+                if (ConnectionManager.ConnectionLost == false)  //Display response if connection with server was not lost
                 {
-                    case BuggyConnectResponse.ConnectPermitted:
-                        //find the buggy connection infromation from the list by searching the list by client id and make a connection to the buggy.
-                        index = clientManager.Clients.FindIndex(x => x.clientID == Convert.ToInt32(listBox1.SelectedItem));
-                        ConnectionManager.AddClient(clientManager.Clients[index].ipAddress, 80);
+                    switch (BuggyConnectResponse.response)
+                    {
+                        case BuggyConnectResponse.ConnectPermitted:
+                            //find the buggy connection infromation from the list by searching the list by client id and make a connection to the buggy.
+                            index = clientManager.Clients.FindIndex(x => x.clientID == Convert.ToInt32(listBox1.SelectedItem));
+                            ConnectionManager.AddClient(clientManager.Clients[index].ipAddress, 80);
 
-                        //display connection status of the buggy
-                        textBoxBuggyConnectStatus.Text = "Connected to buggy";
+                            //display connection status of the buggy
+                            textBoxBuggyConnectStatus.Text = "Connected to buggy";
 
-                        /*
-                         * Disable appropriate controls so that the user cannot connect to other buggies while connected to one.
-                         * Enable appropriate buggy controls to allow the user to use the buggy.
-                         */
-                        buggyConnectBtn.Enabled = false;
-                        buggyDisconnectBtn.Enabled = true;
-                        comboBoxIntMode.Enabled = true;
+                            /*
+                             * Disable appropriate controls so that the user cannot connect to other buggies while connected to one.
+                             * Enable appropriate buggy controls to allow the user to use the buggy.
+                             */
+                            buggyConnectBtn.Enabled = false;
+                            buggyDisconnectBtn.Enabled = true;
+                            comboBoxIntMode.Enabled = true;
 
-                        //Start thread that will monitor motor control inputs if manual mode is on.
-                        BuggyMotorControl.StartMotorControl();
-                        break;
-                    case BuggyConnectResponse.BuggyInUse:
-                        textBoxBuggyConnectStatus.Text = "Buggy is used by another client";
-                        buggyConnectBtn.Enabled = true;
-                        break;
-                    default:
-                        textBoxBuggyConnectStatus.Text = "Buggy is used by another client";
-                        buggyConnectBtn.Enabled = true;
-                        break;
+                            //Start thread that will monitor motor control inputs if manual mode is on.
+                            BuggyMotorControl.StartMotorControl();
+                            break;
+                        case BuggyConnectResponse.BuggyInUse:
+                            textBoxBuggyConnectStatus.Text = "Buggy is used by another client";
+                            buggyConnectBtn.Enabled = true;
+                            break;
+                        default:
+                            textBoxBuggyConnectStatus.Text = "Buggy is used by another client";
+                            buggyConnectBtn.Enabled = true;
+                            break;
+                    }
                 }
 
                 //Reset The response indicator
