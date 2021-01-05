@@ -83,18 +83,6 @@ namespace SOFT564DSUI
             if (Connections.Exists(ClientToRemove => ClientToRemove.connectionID == id))              //Prevent Multiple exceptions from calling for removal of the client by checking if client of such id exists
             {
                 Connections.RemoveAt(Connections.FindIndex(x => x.connectionID == id));               //Remove the client from the list
-
-                if (id == serverID)
-                {
-                   // ConnectionLost = true;
-                    // disconnect from the buggy on disconnection fromt he server
-
-
-                }
-                else if (id == 1)
-                {
-                   // buggyConnected = false;   //No Buggy Was connected
-                }
             }
         }
 
@@ -130,9 +118,9 @@ namespace SOFT564DSUI
                             ConnectionEstablished = true;
                             break;
                         case 2:     //Connection lost
+                            ConnectionLost = true;              //set flag that indicates that connection with server was lost
                             RemoveClient(clientID);             //Remove client from connection manager list
                             MessageHandler.BuggyDisconnect();   //Starts disconnection process from the buggy
-                            ConnectionLost = true;              //set flag that indicates that connection with server was lost
                             clientManager.Clients.Clear();      //Clear the connected client list as we have no connection to the server, we don't know who is connected.
                             break;
                         default:

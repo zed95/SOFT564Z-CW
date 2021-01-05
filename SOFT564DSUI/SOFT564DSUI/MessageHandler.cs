@@ -96,16 +96,54 @@ namespace SOFT564DSUI
                         BuggyConnectResponse.response = request[1];
                         break;
                     case RequestTypes.BuggyDisconnect:
-                        try
+                        //try
+                        //{
+                        //    ConnectionManager.Connections[0].asyncSend(request);    //Notify the server that the controller client is giving up control of the buggy.
+                        //}
+                        //catch
+                        //{
+                        //    //Error in sending. Disconnection occurred, remove the server from connected devices list.
+                        //    try
+                        //    {
+                        //        ConnectionManager.connectionStatus(ConnectionManager.Connections[0].connectionID, 2);
+                        //    }
+                        //    catch
+                        //    {
+
+                        //    }
+                        //}
+                        //ConnectionManager.Connections[1].DisconnectClient();    //Begin the process of disconnecting from the buggy.
+
+
+                        if(ConnectionManager.ConnectionLost == false)  //if connection with server is not lost 
                         {
-                            ConnectionManager.Connections[0].asyncSend(request);    //Notify the server that the controller client is giving up control of the buggy.
+                            try
+                            {
+                                ConnectionManager.Connections[0].asyncSend(request);    //Notify the server that the controller client is giving up control of the buggy.
+                            }
+                            catch
+                            {
+                                //index of buggy is now 0 (by default server index is 0 but on disconnection it is removed and the next object in the list becomes index 0)
+                                ConnectionManager.Connections[0].DisconnectClient();    //Begin the process of disconnecting from the buggy.
+                            }
+
+                            try
+                            {
+                                ConnectionManager.Connections[1].DisconnectClient();    //Begin the process of disconnecting from the buggy.
+                            }
+                            catch
+                            {
+
+                            }
                         }
-                        catch
+                        else
                         {
-                            //Error in sending. Disconnection occurred, remove the server from connected devices list.
-                            ConnectionManager.connectionStatus(ConnectionManager.Connections[0].connectionID, 2);
+                            //index of buggy is now 0 (by default server index is 0 but on disconnection it is removed and the next object in the list becomes index 0)
+                            if (ConnectionManager.Connections.Count > 0)
+                            {
+                                ConnectionManager.Connections[0].DisconnectClient();    //Begin the process of disconnecting from the buggy.
+                            }
                         }
-                        ConnectionManager.Connections[1].DisconnectClient();    //Begin the process of disconnecting from the buggy.
                         break;
                     case RequestTypes.MoveBuggy:
                         ConnectionManager.Connections[1].asyncSend(request);

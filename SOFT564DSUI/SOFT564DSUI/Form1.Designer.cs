@@ -55,10 +55,6 @@
             this.label9 = new System.Windows.Forms.Label();
             this.comboBoxIntMode = new System.Windows.Forms.ComboBox();
             this.label10 = new System.Windows.Forms.Label();
-            this.buttonForward = new System.Windows.Forms.Button();
-            this.buttonLeft = new System.Windows.Forms.Button();
-            this.buttonRight = new System.Windows.Forms.Button();
-            this.buttonReverse = new System.Windows.Forms.Button();
             this.buttonReqData = new System.Windows.Forms.Button();
             this.comboBoxConfig = new System.Windows.Forms.ComboBox();
             this.label11 = new System.Windows.Forms.Label();
@@ -74,6 +70,7 @@
             this.label18 = new System.Windows.Forms.Label();
             this.label19 = new System.Windows.Forms.Label();
             this.comboBoxNewConfig = new System.Windows.Forms.ComboBox();
+            this.ManualControlFocusBtn = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // ipAddressTB
@@ -82,7 +79,7 @@
             this.ipAddressTB.Name = "ipAddressTB";
             this.ipAddressTB.Size = new System.Drawing.Size(212, 20);
             this.ipAddressTB.TabIndex = 4;
-            this.ipAddressTB.Text = "192.168.0.95";
+            this.ipAddressTB.Text = "192.168.0.155";
             // 
             // portTB
             // 
@@ -313,46 +310,6 @@
             this.label10.TabIndex = 30;
             this.label10.Text = "Interaction Mode";
             // 
-            // buttonForward
-            // 
-            this.buttonForward.Location = new System.Drawing.Point(50, 241);
-            this.buttonForward.Name = "buttonForward";
-            this.buttonForward.Size = new System.Drawing.Size(75, 23);
-            this.buttonForward.TabIndex = 31;
-            this.buttonForward.Text = "Forward";
-            this.buttonForward.UseVisualStyleBackColor = true;
-            this.buttonForward.Click += new System.EventHandler(this.buttonForward_Click);
-            // 
-            // buttonLeft
-            // 
-            this.buttonLeft.Location = new System.Drawing.Point(12, 270);
-            this.buttonLeft.Name = "buttonLeft";
-            this.buttonLeft.Size = new System.Drawing.Size(75, 23);
-            this.buttonLeft.TabIndex = 32;
-            this.buttonLeft.Text = "Left";
-            this.buttonLeft.UseVisualStyleBackColor = true;
-            this.buttonLeft.Click += new System.EventHandler(this.buttonLeft_Click);
-            // 
-            // buttonRight
-            // 
-            this.buttonRight.Location = new System.Drawing.Point(93, 270);
-            this.buttonRight.Name = "buttonRight";
-            this.buttonRight.Size = new System.Drawing.Size(75, 23);
-            this.buttonRight.TabIndex = 33;
-            this.buttonRight.Text = "Right";
-            this.buttonRight.UseVisualStyleBackColor = true;
-            this.buttonRight.Click += new System.EventHandler(this.buttonRight_Click);
-            // 
-            // buttonReverse
-            // 
-            this.buttonReverse.Location = new System.Drawing.Point(50, 299);
-            this.buttonReverse.Name = "buttonReverse";
-            this.buttonReverse.Size = new System.Drawing.Size(75, 23);
-            this.buttonReverse.TabIndex = 34;
-            this.buttonReverse.Text = "Reverse";
-            this.buttonReverse.UseVisualStyleBackColor = true;
-            this.buttonReverse.Click += new System.EventHandler(this.buttonReverse_Click);
-            // 
             // buttonReqData
             // 
             this.buttonReqData.Location = new System.Drawing.Point(572, 296);
@@ -484,11 +441,21 @@
             this.comboBoxNewConfig.TabIndex = 50;
             this.comboBoxNewConfig.SelectedIndexChanged += new System.EventHandler(this.comboBoxNewConfig_SelectedIndexChanged);
             // 
+            // ManualControlFocusBtn
+            // 
+            this.ManualControlFocusBtn.Location = new System.Drawing.Point(12, 240);
+            this.ManualControlFocusBtn.Name = "ManualControlFocusBtn";
+            this.ManualControlFocusBtn.Size = new System.Drawing.Size(156, 77);
+            this.ManualControlFocusBtn.TabIndex = 51;
+            this.ManualControlFocusBtn.Text = "Focus Button\r\nW - FORWARD\r\nS - REVERSE\r\nA - LEFT\r\nD - RIGHT\r\n";
+            this.ManualControlFocusBtn.UseVisualStyleBackColor = true;
+            // 
             // ClientGUI
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(692, 331);
+            this.Controls.Add(this.ManualControlFocusBtn);
             this.Controls.Add(this.comboBoxNewConfig);
             this.Controls.Add(this.label19);
             this.Controls.Add(this.label18);
@@ -504,10 +471,6 @@
             this.Controls.Add(this.label11);
             this.Controls.Add(this.comboBoxConfig);
             this.Controls.Add(this.buttonReqData);
-            this.Controls.Add(this.buttonReverse);
-            this.Controls.Add(this.buttonRight);
-            this.Controls.Add(this.buttonLeft);
-            this.Controls.Add(this.buttonForward);
             this.Controls.Add(this.label10);
             this.Controls.Add(this.comboBoxIntMode);
             this.Controls.Add(this.label9);
@@ -574,10 +537,6 @@
         private System.Windows.Forms.Label label9;
         private System.Windows.Forms.ComboBox comboBoxIntMode;
         private System.Windows.Forms.Label label10;
-        private System.Windows.Forms.Button buttonForward;
-        private System.Windows.Forms.Button buttonLeft;
-        private System.Windows.Forms.Button buttonRight;
-        private System.Windows.Forms.Button buttonReverse;
         private System.Windows.Forms.Button buttonReqData;
         private System.Windows.Forms.ComboBox comboBoxConfig;
         private System.Windows.Forms.Label label11;
@@ -593,6 +552,7 @@
         private System.Windows.Forms.Label label18;
         private System.Windows.Forms.Label label19;
         private System.Windows.Forms.ComboBox comboBoxNewConfig;
+        private System.Windows.Forms.Button ManualControlFocusBtn;
     }
 }
 

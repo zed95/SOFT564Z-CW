@@ -28,10 +28,7 @@ namespace SOFT564DSUI
             textBoxBuggyConnectStatus.Enabled = false;
             comboBoxIntMode.Enabled = false;
             comboBoxConfig.Enabled = false;
-            buttonForward.Enabled = false;
-            buttonReverse.Enabled = false;
-            buttonRight.Enabled = false;
-            buttonLeft.Enabled = false;
+            ManualControlFocusBtn.Enabled = false;
             textBoxConfigStatus.Enabled = false;
             textBoxCurrConfig.Enabled = false;
             textBoxConfigStatus.Enabled = false;
@@ -114,10 +111,7 @@ namespace SOFT564DSUI
                     textBoxBuggyConnectStatus.Invoke((MethodInvoker)(() => textBoxBuggyConnectStatus.Enabled = false));
                     comboBoxIntMode.Invoke((MethodInvoker)(() => comboBoxIntMode.Enabled = false));
                     comboBoxConfig.Invoke((MethodInvoker)(() => comboBoxConfig.Enabled = false));
-                    buttonForward.Invoke((MethodInvoker)(() => buttonForward.Enabled = false));
-                    buttonReverse.Invoke((MethodInvoker)(() => buttonReverse.Enabled = false));
-                    buttonRight.Invoke((MethodInvoker)(() => buttonRight.Enabled = false));
-                    buttonLeft.Invoke((MethodInvoker)(() => buttonLeft.Enabled = false));
+                    ManualControlFocusBtn.Invoke((MethodInvoker)(() => ManualControlFocusBtn.Enabled = false));
                     textBoxConfigStatus.Invoke((MethodInvoker)(() => textBoxConfigStatus.Enabled = false));
                     textBoxCurrConfig.Invoke((MethodInvoker)(() => textBoxCurrConfig.Enabled = false));
                     textBoxConfigStatus.Invoke((MethodInvoker)(() => textBoxConfigStatus.Enabled = false));
@@ -145,10 +139,7 @@ namespace SOFT564DSUI
                         textBoxBuggyConnectStatus.Invoke((MethodInvoker)(() => textBoxBuggyConnectStatus.Enabled = false));
                         comboBoxIntMode.Invoke((MethodInvoker)(() => comboBoxIntMode.Enabled = false));
                         comboBoxConfig.Invoke((MethodInvoker)(() => comboBoxConfig.Enabled = false));
-                        buttonForward.Invoke((MethodInvoker)(() => buttonForward.Enabled = false));
-                        buttonReverse.Invoke((MethodInvoker)(() => buttonReverse.Enabled = false));
-                        buttonRight.Invoke((MethodInvoker)(() => buttonRight.Enabled = false));
-                        buttonLeft.Invoke((MethodInvoker)(() => buttonLeft.Enabled = false));
+                        ManualControlFocusBtn.Invoke((MethodInvoker)(() => ManualControlFocusBtn.Enabled = false));
                         textBoxConfigStatus.Invoke((MethodInvoker)(() => textBoxConfigStatus.Enabled = false));
                         textBoxCurrConfig.Invoke((MethodInvoker)(() => textBoxCurrConfig.Enabled = false));
                         textBoxConfigStatus.Invoke((MethodInvoker)(() => textBoxConfigStatus.Enabled = false));
@@ -406,10 +397,7 @@ namespace SOFT564DSUI
             //Disable buggy controls
             comboBoxIntMode.Enabled = false;
             comboBoxConfig.Enabled = false;
-            buttonForward.Enabled = false;
-            buttonReverse.Enabled = false;
-            buttonRight.Enabled = false;
-            buttonLeft.Enabled = false;
+            ManualControlFocusBtn.Enabled = false;
             textBoxConfigStatus.Enabled = false;
             textBoxCurrConfig.Enabled = false;
             buttonConfigUpdate.Enabled = false;
@@ -491,10 +479,7 @@ namespace SOFT564DSUI
             switch(comboBoxIntMode.SelectedItem.ToString())
             {
                 case "Manual":
-                    buttonForward.Enabled = true;
-                    buttonReverse.Enabled = true;
-                    buttonRight.Enabled = true;
-                    buttonLeft.Enabled = true;
+                    ManualControlFocusBtn.Enabled = true;
                     TempTextBox.Enabled = true;
                     HumTextBox.Enabled = true;
                     LIntTextBox.Enabled = true;
@@ -512,10 +497,7 @@ namespace SOFT564DSUI
                     HumTextBox.Enabled = true;
                     LIntTextBox.Enabled = true;
                     comboBoxConfig.Enabled = false;
-                    buttonForward.Enabled = false;
-                    buttonReverse.Enabled = false;
-                    buttonRight.Enabled = false;
-                    buttonLeft.Enabled = false;
+                    ManualControlFocusBtn.Enabled = false;
                     textBoxCurrConfig.Enabled = false;
                     textBoxConfigStatus.Enabled = false;
                     buttonConfigUpdate.Enabled = false;
@@ -526,10 +508,7 @@ namespace SOFT564DSUI
                     break;
                 case "Configuration":
                     comboBoxConfig.Enabled = true;
-                    buttonForward.Enabled = false;
-                    buttonReverse.Enabled = false;
-                    buttonRight.Enabled = false;
-                    buttonLeft.Enabled = false;
+                    ManualControlFocusBtn.Enabled = false;
                     textBoxCurrConfig.Enabled = true;
                     textBoxConfigStatus.Enabled = true;
                     buttonConfigUpdate.Enabled = true;
@@ -543,10 +522,7 @@ namespace SOFT564DSUI
                     break;
                 default:
                     comboBoxConfig.Enabled = false;
-                    buttonForward.Enabled = false;
-                    buttonReverse.Enabled = false;
-                    buttonRight.Enabled = false;
-                    buttonLeft.Enabled = false;
+                    ManualControlFocusBtn.Enabled = false;
                     textBoxConfigStatus.Enabled = false;
                     textBoxCurrConfig.Enabled = false;
                     buttonConfigUpdate.Enabled = false;
@@ -564,26 +540,6 @@ namespace SOFT564DSUI
         {
             //if the button is clicked, send request to the buggy to send back sensor data
             MessageHandler.SendEnvData();
-        }
-
-        private void buttonForward_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void buttonReverse_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void buttonRight_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void buttonLeft_Click(object sender, EventArgs e)
-        {
-
         }
 
         private void comboBoxNewConfig_SelectedIndexChanged(object sender, EventArgs e)
