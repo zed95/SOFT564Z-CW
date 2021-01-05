@@ -1,0 +1,10 @@
+C:\Users\Zed\Desktop\SOFT564Z-CW\Server\Server\bin\Debug\Server.exe.config
+C:\Users\Zed\Desktop\SOFT564Z-CW\Server\Server\bin\Debug\Server.exe
+C:\Users\Zed\Desktop\SOFT564Z-CW\Server\Server\bin\Debug\Server.pdb
+C:\Users\Zed\Desktop\SOFT564Z-CW\Server\Server\obj\Debug\Server.csprojAssemblyReference.cache
+C:\Users\Zed\Desktop\SOFT564Z-CW\Server\Server\obj\Debug\Server.Form1.resources
+C:\Users\Zed\Desktop\SOFT564Z-CW\Server\Server\obj\Debug\Server.Properties.Resources.resources
+C:\Users\Zed\Desktop\SOFT564Z-CW\Server\Server\obj\Debug\Server.csproj.GenerateResource.cache
+C:\Users\Zed\Desktop\SOFT564Z-CW\Server\Server\obj\Debug\Server.csproj.CoreCompileInputs.cache
+C:\Users\Zed\Desktop\SOFT564Z-CW\Server\Server\obj\Debug\Server.exe
+C:\Users\Zed\Desktop\SOFT564Z-CW\Server\Server\obj\Debug\Server.pdb
