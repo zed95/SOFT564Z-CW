@@ -420,7 +420,7 @@ namespace SOFT564DSUI
 
             if(listBox1.SelectedIndex == -1)        //if no client was selected from the listbox
             {
-                textBoxBuggyConnectStatus.Text = "Select a client to connect to.";
+                textBoxBuggyConnectStatus.Text = "Select a buggy to connect to.";
             }
             else                                    //client was selected
             {

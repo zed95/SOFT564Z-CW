@@ -96,25 +96,6 @@ namespace SOFT564DSUI
                         BuggyConnectResponse.response = request[1];
                         break;
                     case RequestTypes.BuggyDisconnect:
-                        //try
-                        //{
-                        //    ConnectionManager.Connections[0].asyncSend(request);    //Notify the server that the controller client is giving up control of the buggy.
-                        //}
-                        //catch
-                        //{
-                        //    //Error in sending. Disconnection occurred, remove the server from connected devices list.
-                        //    try
-                        //    {
-                        //        ConnectionManager.connectionStatus(ConnectionManager.Connections[0].connectionID, 2);
-                        //    }
-                        //    catch
-                        //    {
-
-                        //    }
-                        //}
-                        //ConnectionManager.Connections[1].DisconnectClient();    //Begin the process of disconnecting from the buggy.
-
-
                         if(ConnectionManager.ConnectionLost == false)  //if connection with server is not lost 
                         {
                             try
@@ -146,19 +127,19 @@ namespace SOFT564DSUI
                         }
                         break;
                     case RequestTypes.MoveBuggy:
-                        ConnectionManager.Connections[1].asyncSend(request);
+                        SendBuggy(request);
                         break;
                     case RequestTypes.InteractionMode:
-                        ConnectionManager.Connections[1].asyncSend(request);
+                        SendBuggy(request);
                         break;
                     case RequestTypes.CurrConfigParam:
-                        ConnectionManager.Connections[1].asyncSend(request);
+                        SendBuggy(request);
                         break;
                     case RequestTypes.SendCurrConfig:
                         BuggyConfigurationData.currConfigParam = BitConverter.ToInt32(request, 1);
                         break;
                     case RequestTypes.UpdateConfigOption:
-                        ConnectionManager.Connections[1].asyncSend(request);
+                        SendBuggy(request);
                         break;
                     case RequestTypes.ConfigUpdateStatus:
                         BuggyConfigurationData.configUpdateStatus = request[1];
@@ -169,6 +150,19 @@ namespace SOFT564DSUI
                         break;
                 }
 
+            }
+        }
+
+        //Sends request to the buggy
+        static public void SendBuggy(byte[] request)
+        {
+            try     //Attempt to send request to the buggy
+            {
+                ConnectionManager.Connections[1].asyncSend(request);
+            }
+            catch   //if sending did not succeed then remove the buggy from connected clients list
+            {
+                ConnectionManager.connectionStatus(ConnectionManager.Connections[1].connectionID, 2);
             }
         }
 
