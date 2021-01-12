@@ -75,6 +75,9 @@ namespace SOFT564DSUI
         public static void AddServer(long ip, int port)
         {
             Connections.Insert(0, new ConnectionInstance(ip, port, serverID));
+
+            //Send request to the server to Identify the controller client connected as a controller client.
+            MessageHandler.BuggyOrClient();
         }
 
         //Removes specified client (buggy or server) from the list of connections
@@ -179,11 +182,9 @@ namespace SOFT564DSUI
                 socket = new Socket(endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp); //setup a new socket to connect to the server.
                 socket.BeginConnect(endPoint, ConnectionCallback, null);    //Start attempting to connect to the remote host.
 
-                //ConnectionEstablished = true;
             }
             catch (Exception e)
             {
-                //ConnectionEstablished = false;
                 Console.WriteLine("Error ConnectClientTo");
                 Console.WriteLine(e);
             }
@@ -255,14 +256,8 @@ namespace SOFT564DSUI
 
                 //copy new bytes from callback buffer into the unqued bytes are for processing.
                 Buffer.BlockCopy(callbackBuffer, 0, unqueuedBytesBuffer, copyOffset, bytesReceived); 
-                Console.WriteLine("Number of bytes available: " + bytesLeft);
                 while (bytesLeft > 0)
                 {
-                    for(int x = 0; x < bytesLeft; x++)
-                    {
-                        Console.WriteLine("unqueued buffer bytes: " + unqueuedBytesBuffer[x]);
-                    }
-
                     //place the request data into a temporary queue.
                     switch (unqueuedBytesBuffer[0])     //if the data sent does not match any request types the while loop freezes as nothing is currently done with that byte. Need to fix that.----------mkhn
                     {
@@ -381,14 +376,11 @@ namespace SOFT564DSUI
                 //if the command is recognised but not all required bytes arrived then jump to here to continue with the code
                 breakout:
 
-                Console.WriteLine("Connection " + connectionID + " is requesting queue access");
                 MessageHandler.RequestQueueMutex.WaitOne();                 //Wait for signal that it's okay to enter
-                Console.WriteLine("Connection " + connectionID + " has queue access");
                 while (tempQueue.Count > 0) //Keep adding to request queue until the temporary queue is empty.
                 {
                     MessageHandler.RequestQueue.Enqueue(tempQueue.Dequeue());               //Add request data to the queue
                 }
-                Console.WriteLine("Connection " + connectionID + " is releasing mutex");
                 MessageHandler.RequestQueueMutex.ReleaseMutex();            //Release the mutex
             }
 

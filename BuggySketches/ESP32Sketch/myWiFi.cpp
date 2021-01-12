@@ -24,12 +24,12 @@ void SetupWiFi() {
   //  const char* password = "ysZgas5curvr";
 
   //  //46 Wilson
-    const char* ssid = "VM5625627";
-    const char* password = "9shxfpSCjwmb";
+  const char* ssid = "VM5625627";
+  const char* password = "9shxfpSCjwmb";
 
   //103 Kendal
-//  const char* ssid = "OriginBroadband16477";
-//  const char* password = "Cv7k09mp!";
+  //  const char* ssid = "OriginBroadband16477";
+  //  const char* password = "Cv7k09mp!";
 
   //const char* ssid = "zHotspot";
   // const char* password = "Cv7k09mp!";
@@ -54,12 +54,17 @@ void SetupWiFi() {
 }
 
 void ConnectToServer() {
+  byte indentificationRequest[2] = {16, 0};  //Generated request for the server to know what type of device the connected esp32 is.
   // Connect to server and getconnection status
   if (!serverClient.connect(serverIP, serverPort))
   {
     Serial.println("Failed to connect to server.");
   }
-  Serial.println("Connected to server");
+  else {
+    Serial.println("Connected to server");
+    //Send request to server to allow the server to identify the buggy as a buggy.
+    SendWiFi(serverClient, &indentificationRequest[0], 2);
+  }
 }
 
 void CheckConnections() {
@@ -75,7 +80,7 @@ void CheckConnections() {
       AddQueue(&requestQueue[0], rhNewestByte, rhBytesInQueue, &intModeRequest[0], 2);
       xSemaphoreGive(requestQueueMutex);
     }
-    
+
     //disconnect client controller if there is one connected to the buggy
     if (controllerClient.connected()) {
       //Disconnect controller client

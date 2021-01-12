@@ -117,7 +117,7 @@ namespace Server
         public static void AddClient(Socket socket)
         {
             Clients.Add(new Client(socket, AssignID()));                  //Add newly connected client to the list of clients
-            RequestHandler.ListAddClient(Clients[Clients.Count - 1]);     //Send request to the request handler to send the newly connected client to all other connected clients  
+           // RequestHandler.ListAddClient(Clients[Clients.Count - 1]);     //Send request to the request handler to send the newly connected client to all other connected clients  
 
         }
 
@@ -141,7 +141,12 @@ namespace Server
                 }
 
                 Clients.RemoveAt(Clients.FindIndex(x => x.clientID == id));        //Remove the client from the list
-                RequestHandler.ListRemoveClient(removedClient);                    //send request to all connected clients to remove the disconnected client from their list
+
+                //if the removed client is a buggy then send request to controller clients to remove the buggy from their list.
+                if (removedClient.buggyOrClient == 0)
+                {
+                    RequestHandler.ListRemoveClient(removedClient);                    //send request to all connected clients to remove the disconnected buggy from their list
+                }
             }
         }
 
@@ -170,6 +175,7 @@ namespace Server
         private Byte[] unqueuedBytesBuffer = new byte[0];
         public bool inUse;
         public int connectedToBuggy;
+        public int buggyOrClient;
 
         //class constructor
         public Client(Socket socket, int id)
@@ -179,6 +185,7 @@ namespace Server
             callbackBuffer = new byte[1024];    //create a buffer for asynchronous receiving of data from the client
             inUse = false;                      //buggy is not used by any client at the beginning
             connectedToBuggy = -1;              //client is not connected to any buggy at the beginning 
+            buggyOrClient = -1;                 //connected client didnt identify as buggy or controller client yet.
 
             clientReceive();                    //Begin asynchronously receiving data
         }
@@ -277,6 +284,24 @@ namespace Server
                                     tempQueue.Enqueue(byteBuff);
                                     bytesLeft -= 1;
                                     Buffer.BlockCopy(unqueuedBytesBuffer, 1, unqueuedBytesBuffer, 0, bytesLeft);
+                                    Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
+                                }
+                                else
+                                {
+                                    goto breakout;
+                                }
+                                break;
+                            case RequestTypes.BuggyOrClient:
+                                if (bytesLeft >= 2)
+                                {
+                                    //Add sender ID to the request
+                                    byte[] byteBuff = new byte[6];
+                                    Buffer.BlockCopy(ExtractRequest(unqueuedBytesBuffer, 2), 0, byteBuff, 0, 2);
+                                    Buffer.BlockCopy(BitConverter.GetBytes(clientID), 0, byteBuff, 2, 4);           //Also pass the client id that sent the request
+
+                                    tempQueue.Enqueue(byteBuff);
+                                    bytesLeft -= 2;
+                                    Buffer.BlockCopy(unqueuedBytesBuffer, 2, unqueuedBytesBuffer, 0, bytesLeft);
                                     Array.Resize(ref unqueuedBytesBuffer, bytesLeft);
                                 }
                                 else

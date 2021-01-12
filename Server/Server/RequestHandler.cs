@@ -57,8 +57,15 @@ namespace Server
                         CheckAllClients(request);
                         break;
                     case RequestTypes.ListAddClient:
-                        sendAllClients(request);
-                        sendClientAll();
+                        //if buggy then send it to all clients
+                        if (clientManager.Clients[clientManager.Clients.FindIndex(x => x.clientID == BitConverter.ToInt32(request, 13))].buggyOrClient == 0)
+                        {
+                            sendAllClients(request);
+                        }
+                        else //if controller clients then send all buggies to it.
+                        {
+                            sendClientAll(request);
+                        }
                         break;
                     case RequestTypes.ListRemoveClient:
                         sendAllClients(request);
@@ -77,6 +84,9 @@ namespace Server
                         break;
                     case RequestTypes.RemoveClient:
                         clientManager.RemoveClient(BitConverter.ToInt32(request, 1));
+                        break;
+                    case RequestTypes.BuggyOrClient:
+                        BuggyOrClient(request);
                         break;
                     default:
                         //do nothing as request was undefined
@@ -333,86 +343,136 @@ namespace Server
         //send data to all clients
         public static void sendAllClients(byte[] request)
         {
+            int clientID, clientIndex;
+            int buggyOrClient = -1;
 
-            foreach (Client clients in clientManager.Clients)
+            if (request[0] == RequestTypes.ListAddClient)
             {
-                
-                try
+                //find whether the client is a buggy or a controller client before sending anything
+                clientID = BitConverter.ToInt32(request, 13);
+                clientIndex = clientManager.Clients.FindIndex(x => x.clientID == clientID);
+                if (clientIndex != -1)   //if a client of such id was found
                 {
-                    if (request[0] == RequestTypes.ListAddClient)   //if the request is for other clients to add a client to the list:
+                    buggyOrClient = clientManager.Clients[clientIndex].buggyOrClient;
+                }
+                else //if not then buggy or client are -1 signyfing that client does not exist.
+                {
+                    buggyOrClient = -1;
+                }
+            }
+
+            //send to all clients if the client is a buggy. Otherwise don't send controller clients information about other controller clients
+            //ignore the check to see whether the client is a buggy if the request to remove the client has been sent as the client can only be a buggy.
+            if (buggyOrClient == 0 || request[0] == RequestTypes.ListRemoveClient)
+            {
+                foreach (Client clients in clientManager.Clients)
+                {
+                    try
                     {
-                        //prevents the data about the newest client being sent to itself
-                        if (clients.clientID != clientManager.Clients[clientManager.Clients.Count - 1].clientID)
+                        if (request[0] == RequestTypes.ListAddClient)   //if the request is for other clients to add a client to the list:
+                        {
+                            //Only send the data to a controller client
+                            if (clients.buggyOrClient == 1)
+                            {
+                                clients.clientSocket.BeginSend(request, 0, request.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other clients
+                            }
+                        }
+                        else if (request[0] == RequestTypes.ListRemoveClient) //if the request is for other clients to delete a disconnected client from their list
                         {
                             clients.clientSocket.BeginSend(request, 0, request.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other clients
                         }
                     }
-                    else if(request[0] == RequestTypes.ListRemoveClient) //if the request is for other clients to delete a disconnected client from their list
+                    catch (Exception e)
                     {
-                        clients.clientSocket.BeginSend(request, 0, request.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other clients
+                        Console.WriteLine("Exception in sendAllClients");
+                        //remove the client who disconnected when attempt was made to send data to it
+                        RemoveClient(clients.clientID);
                     }
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Exception in sendAllClients");
-                    //remove the client who disconnected when attempt was made to send data to it
-                    RemoveClient(clients.clientID);
                 }
             }
         }
 
 
         //sned newly connected client information about all other connected clients.
-        public static void sendClientAll()
+        public static void sendClientAll(byte[] clientData)
         {
             List<object> request = new List<object>();
             List<int> dataType = new List<int>();
             byte[] requestByteArray = new byte[17];
             String StrIPAddr;
             IPEndPoint endPoint;
+            int clientID, clientIndex;
 
-            foreach (Client clients in clientManager.Clients)
+            //find whether the client is a buggy or a controller client before sending anything
+            clientID = BitConverter.ToInt32(clientData, 13);
+            clientIndex = clientManager.Clients.FindIndex(x => x.clientID == clientID);
+
+            //if client that we want to sent buggy data to exists then continue
+            if (clientIndex != -1)
             {
-                try
-                {   
-                    //Add request type to the request object list and the request's type to the dataType list
-                    request.Add(RequestTypes.ListAddClient);
-                    dataType.Add(VarTypes.typeByte);
-
-                    //extract ipaddress of the client and convert it to a long and add it to the request list. The add the its datatype to the dataType list
-                    endPoint = (IPEndPoint)clients.clientSocket.RemoteEndPoint;
-                    IPAddress addr = endPoint.Address;
-                    StrIPAddr = addr.ToString();
-                    request.Add(Server.IPtoLong(StrIPAddr));
-                    dataType.Add(VarTypes.typeLong);
-
-                    //add the port
-                    request.Add(endPoint.Port);
-                    dataType.Add(VarTypes.typeInt32);
-
-                    //add client id
-                    request.Add(clients.clientID);
-                    dataType.Add(VarTypes.typeInt32);
-
-                    //convert the data from the request list to a byte array for sending over the network
-                    requestByteArray = RequestHandler.byteConverter(request, dataType, 17);
-
-                    if (clients.clientID != clientManager.Clients[clientManager.Clients.Count - 1].clientID)        //Do not send information about the newest client to itself
-                    {
-                        clientManager.Clients[clientManager.Clients.Count - 1].clientSocket.BeginSend(requestByteArray, 0, requestByteArray.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other clients
-                    }
-
-                    //clear the lists for the next iteration
-                    request.Clear();
-                    dataType.Clear();
-                }
-                catch (Exception e)
+                foreach (Client clients in clientManager.Clients)
                 {
-                    Console.WriteLine("Exception in sendAllClients");
-                    //remove client that was disconnected
-                    RemoveClient(clients.clientID);
+                    //send data to the newly connected client if the client we are inspecting now is a buggy.
+                    if (clients.buggyOrClient == 0)
+                    {
+                        try
+                        {
+                            //Add request type to the request object list and the request's type to the dataType list
+                            request.Add(RequestTypes.ListAddClient);
+                            dataType.Add(VarTypes.typeByte);
+
+                            //extract ipaddress of the client and convert it to a long and add it to the request list. The add the its datatype to the dataType list
+                            endPoint = (IPEndPoint)clients.clientSocket.RemoteEndPoint;
+                            IPAddress addr = endPoint.Address;
+                            StrIPAddr = addr.ToString();
+                            request.Add(Server.IPtoLong(StrIPAddr));
+                            dataType.Add(VarTypes.typeLong);
+
+                            //add the port
+                            request.Add(endPoint.Port);
+                            dataType.Add(VarTypes.typeInt32);
+
+                            //add client id
+                            request.Add(clients.clientID);
+                            dataType.Add(VarTypes.typeInt32);
+
+                            //convert the data from the request list to a byte array for sending over the network
+                            requestByteArray = RequestHandler.byteConverter(request, dataType, 17);
+
+                            if (clients.clientID != clientManager.Clients[clientManager.Clients.Count - 1].clientID)        //Do not send information about the newest client to itself
+                            {
+                                clientManager.Clients[clientIndex].clientSocket.BeginSend(requestByteArray, 0, requestByteArray.Length, SocketFlags.None, clients.SendCallback, clients.clientSocket); //send data to the other clients
+                            }
+
+                            //clear the lists for the next iteration
+                            request.Clear();
+                            dataType.Clear();
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine("Exception in sendAllClients");
+                            //remove client that was disconnected
+                            RemoveClient(clients.clientID);
+                        }
+                    }
                 }
             }
+        }
+
+        public static void BuggyOrClient(byte[] request)
+        {
+            int senderID, senderIndex;
+
+            //get sender ID
+            senderID = BitConverter.ToInt32(request, 2);
+
+            //Find the index of the sender that wants to identify itself
+            senderIndex = clientManager.Clients.FindIndex(x => x.clientID == senderID);
+
+            //Identify the client as buggy or controller client
+            clientManager.Clients[senderIndex].buggyOrClient = request[1];
+
+            RequestHandler.ListAddClient(clientManager.Clients[senderIndex]);     //Send request to the request handler to send the newly connected client to all other connected clients 
         }
 
     }
@@ -429,6 +489,7 @@ namespace Server
         public const byte BuggyDisconnect      = 8;
         public const byte AddNewClient         = 14;
         public const byte RemoveClient         = 15;
+        public const byte BuggyOrClient        = 16;
     }
 
 

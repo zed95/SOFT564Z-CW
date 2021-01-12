@@ -145,6 +145,9 @@ namespace SOFT564DSUI
                         BuggyConfigurationData.configUpdateStatus = request[1];
                         configStatusUpdate = true;
                         break;
+                    case RequestTypes.BuggyOrClient:
+                        ConnectionManager.Connections[0].asyncSend(request);
+                        break;
                     default:
 
                         break;
@@ -370,6 +373,25 @@ namespace SOFT564DSUI
             RequestQueueMutex.ReleaseMutex();      
         }
 
+        public static void BuggyOrClient()
+        {
+            List<object> request = new List<object>();
+            List<int> dataType = new List<int>();
+            byte[] requestByteArray = new byte[2];
+
+            request.Add(RequestTypes.BuggyOrClient);
+            dataType.Add(VarTypes.typeByte);
+
+            request.Add(BuggyOrControllerClient.ControllerClient);
+            dataType.Add(VarTypes.typeByte);
+
+            requestByteArray = byteConverter(request, dataType, 2);
+
+            RequestQueueMutex.WaitOne();
+            MessageHandler.RequestQueue.Enqueue(requestByteArray);
+            RequestQueueMutex.ReleaseMutex();
+        }
+
         static public byte[] byteConverter(List<object> request, List<int> dataTypes, int byteCount)
         {
             byte[] byteArray = new byte[byteCount];
@@ -418,6 +440,7 @@ namespace SOFT564DSUI
         public const byte SendCurrConfig       = 11;
         public const byte UpdateConfigOption   = 12;
         public const byte ConfigUpdateStatus   = 13;
+        public const byte BuggyOrClient        = 16;
     }
 
     //a class of variable types used in the byte converter to convert request data into bytes
@@ -483,5 +506,11 @@ namespace SOFT564DSUI
         public const byte MaxObjectDistance   = 2;
         public const byte BuggySpeed          = 3;
         public const byte LightIntensityDelta = 4;
+    }
+
+    static class BuggyOrControllerClient
+    {
+        public const byte Buggy = 0;
+        public const byte ControllerClient = 1;
     }
 }
