@@ -52,6 +52,7 @@ void ReceiveSerial() {
   if (serialBytesInQueue > 0) {
     switch (peekQueue(&serialByteBuffer[0], serialOldestByte)) {  //look at the first byte in the queue to determine the type of request we are dealing with
       case SEND_CURR_CONFIG:
+        Serial.println("Receiving Current Configuration From Buggy");
         if (serialBytesInQueue >= 5) {                                                                  //if there are enough bytes in the serial buffer queue for the request then continue
           xSemaphoreTake(requestQueueMutex, portMAX_DELAY);                                             //take the mutex to safely add the request data to the request handler queue
           RemoveQueue(&serialByteBuffer[0], serialOldestByte, serialBytesInQueue, &dataBuffer[0], 5);   //Remove request from serial buffer queue

@@ -197,6 +197,7 @@ void SendCurrConfig(uint32_t parameter) {
     byteBuffer[x + 1] = *(p + x);
   }
 
+  Serial.println("Sending Current Configuration");
   SendSerial(&byteBuffer[0], 5);                  //send via uart
 }
 
